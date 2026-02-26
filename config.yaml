@@ -1,0 +1,13 @@
+title: "Joseph Anderson"
+description: "Physics & Astronomy | Assistant Professor at Carthage College"
+baseurl: ""
+url: "https://username.github.io"
+remote_theme: "mmistakes/minimal-mistakes@4.27.3"
+
+collections:
+  demonstrations:
+    output: true
+
+plugins:
+  - jekyll-feed
+ 

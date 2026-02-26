@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conductor Electrostatics — Proofs by Contradiction</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@300;400&display=swap');
+  :root {
+    --bg:#0d0f14; --surface:#13161e; --border:#252836;
+    --accent:#e8c96d; --accent2:#6dd9e8; --danger:#e86d6d;
+    --text:#d4cfc7; --muted:#6b6a72;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'EB Garamond',Georgia,serif; min-height:100vh; overflow-x:hidden; }
+  header { padding:1.6rem 2.5rem 1rem; border-bottom:1px solid var(--border); display:flex; align-items:baseline; gap:2rem; }
+  header h1 { font-size:1.5rem; font-weight:400; letter-spacing:0.04em; color:#f0ece4; }
+  header .course { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--accent); letter-spacing:0.12em; font-weight:300; }
+  .layout { display:grid; grid-template-columns:1fr 360px; min-height:calc(100vh - 65px); }
+  .canvas-area { padding:1.2rem 1.8rem; display:flex; flex-direction:column; gap:0.6rem; border-right:1px solid var(--border); }
+  #mainCanvas { width:100%; border-radius:6px; border:1px solid var(--border); display:block; }
+  .caption { font-size:0.78rem; color:var(--muted); font-style:italic; text-align:center; }
+
+  /* charge slider row */
+  .charge-row {
+    display:flex; align-items:center; gap:0.9rem;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:5px; padding:0.55rem 1rem;
+  }
+  .charge-row label { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--muted); letter-spacing:0.07em; white-space:nowrap; }
+  .charge-row input[type=range] { flex:1; accent-color:var(--accent); cursor:pointer; }
+  .charge-val { font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--accent); min-width:52px; text-align:right; }
+
+  /* sidebar */
+  .sidebar { padding:1.2rem 1.6rem; display:flex; flex-direction:column; gap:1.3rem; overflow-y:auto; }
+  .section-label { font-family:'JetBrains Mono',monospace; font-size:0.63rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem; }
+  .proof-card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:1.1rem; transition:border-color 0.3s; }
+  .proof-card.active { border-color:var(--danger); }
+  .proof-card h3 { font-size:0.98rem; font-weight:400; margin-bottom:0.3rem; color:#f0ece4; line-height:1.4; }
+  .proof-card p { font-size:0.86rem; line-height:1.56; color:var(--text); font-style:italic; margin-bottom:0.7rem; }
+  .consequence { font-size:0.81rem; line-height:1.58; padding:0.6rem 0.85rem; border-radius:4px; background:rgba(232,109,109,0.08); border-left:2px solid var(--danger); color:#e8a0a0; max-height:0; overflow:hidden; opacity:0; transition:max-height 0.4s ease, opacity 0.4s ease; }
+  .consequence.visible { max-height:140px; opacity:1; }
+  .ctrl-panel { margin-top:0.75rem; background:#0a0c12; border:1px solid var(--border); border-radius:5px; display:flex; align-items:center; gap:0.75rem; padding:0.55rem 0.75rem; }
+  .ctrl-canvas { border-radius:4px; cursor:grab; flex-shrink:0; display:block; }
+  .ctrl-canvas:active { cursor:grabbing; }
+  .ctrl-info { flex:1; min-width:0; }
+  .ctrl-value { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--accent); letter-spacing:0.05em; }
+  .ctrl-label { font-size:0.76rem; color:var(--muted); margin-top:0.18rem; font-style:italic; line-height:1.38; }
+  .btn-row { display:flex; gap:0.5rem; margin-top:0.7rem; }
+  .reset-btn { flex:1; padding:0.48rem 0.7rem; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:0.06em; cursor:pointer; transition:all 0.2s; }
+  .reset-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+  .state-indicator { font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:0.07em; padding:0.18rem 0.48rem; border-radius:3px; display:inline-block; margin-top:0.45rem; }
+  .state-normal    { background:rgba(109,217,232,0.1); color:var(--accent2); border:1px solid rgba(109,217,232,0.3); }
+  .state-caution   { background:rgba(232,201,109,0.1); color:var(--accent); border:1px solid rgba(232,201,109,0.3); }
+  .state-violation { background:rgba(232,109,109,0.1); color:var(--danger); border:1px solid rgba(232,109,109,0.3); }
+  .legend { display:flex; flex-direction:column; gap:0.35rem; }
+  .legend-item { display:flex; align-items:center; gap:0.55rem; font-size:0.83rem; color:var(--text); }
+  .legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .legend-line { width:16px; height:2px; flex-shrink:0; }
+
+  /* ── Tab navigation ── */
+  .tab-bar {
+    display:flex; gap:0; border-bottom:1px solid var(--border);
+    padding:0 2.5rem; background:var(--bg);
+  }
+  .tab-btn {
+    font-family:'JetBrains Mono',monospace; font-size:0.68rem; letter-spacing:0.1em;
+    padding:0.7rem 1.2rem; border:none; background:transparent; color:var(--muted);
+    cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px;
+    transition:color 0.2s, border-color 0.2s;
+  }
+  .tab-btn:hover { color:var(--text); }
+  .tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:grid; grid-template-columns:1fr 360px; min-height:calc(100vh - 105px); }
+
+  /* ── Corollary view ── */
+  #corollaryCanvas { width:100%; border-radius:6px; border:1px solid var(--border); display:block; cursor:default; }
+  .path-toggle-row {
+    display:flex; gap:0.5rem; align-items:center;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:5px; padding:0.45rem 0.8rem;
+  }
+  .path-toggle-btn {
+    font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:0.07em;
+    padding:0.35rem 0.75rem; border-radius:3px; border:1px solid var(--border);
+    background:transparent; color:var(--muted); cursor:pointer; transition:all 0.2s;
+  }
+  .path-toggle-btn.active { background:rgba(109,217,232,0.1); color:var(--accent2); border-color:rgba(109,217,232,0.4); }
+  .path-toggle-btn:hover:not(.active) { color:var(--text); border-color:var(--muted); }
+  .delta-v-display {
+    font-family:'JetBrains Mono',monospace; font-size:1.1rem;
+    text-align:center; padding:0.85rem 1rem;
+    background:var(--surface); border:1px solid var(--border); border-radius:6px;
+    letter-spacing:0.05em;
+  }
+  .delta-v-display .dv-label { font-size:0.63rem; color:var(--muted); display:block; margin-bottom:0.3rem; letter-spacing:0.12em; }
+  .delta-v-display .dv-value { color:#f0ece4; }
+  .delta-v-display .dv-reason { font-size:0.8rem; color:var(--accent2); display:block; margin-top:0.4rem; font-family:'EB Garamond',serif; font-style:italic; letter-spacing:0; line-height:1.5; }
+  .corollary-card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:1.1rem; }
+  .corollary-card h3 { font-size:0.98rem; font-weight:400; margin-bottom:0.5rem; color:#f0ece4; }
+  .corollary-card p { font-size:0.86rem; line-height:1.6; color:var(--text); margin-bottom:0.5rem; }
+  .corollary-card .math { font-style:italic; color:var(--accent2); font-size:0.88rem; display:block; margin:0.3rem 0 0.3rem 0.8rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Conductor Electrostatics</h1>
+  <span class="course">PHY4300</span>
+</header>
+<nav class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('proofs')">PROOFS I &amp; II</button>
+  <button class="tab-btn" onclick="switchTab('corollary1')">COROLLARY I — EQUIPOTENTIAL</button>
+</nav>
+
+<!-- ═══ TAB: Proofs ═══ -->
+<div class="tab-panel active" id="tab-proofs">
+  <div class="canvas-area">
+    <canvas id="mainCanvas"></canvas>
+    <div class="charge-row">
+      <label>NET CHARGE Q</label>
+      <input type="range" id="chargeSlider" min="-8" max="8" step="1" value="0">
+      <span class="charge-val" id="chargeVal">Q = 0</span>
+    </div>
+    <p class="caption">Background: |E| magnitude. Lines: electric field streamplot.</p>
+  </div>
+  <div class="sidebar">
+    <div>
+      <div class="section-label">Legend</div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#6dd9e8"></div>Free electrons (mobile)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#e8c96d"></div>Positive nuclei (fixed)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff7070"></div>Surface excess charge</div>
+        <div class="legend-item"><div class="legend-line" style="background:rgba(180,210,255,0.7)"></div>Electric field lines</div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Proof I — Interior Field</div>
+      <div class="proof-card" id="card1">
+        <h3>E = 0 inside the conductor</h3>
+        <p>Suppose there were a nonzero uniform field in the bulk. The joystick adds a constant applied field <strong>E<sub>0</sub></strong> everywhere.</p>
+        <div class="consequence" id="cons1">
+          The free electrons feel <strong>F = qE</strong> and accelerate opposite to E — motion, not statics. <em>Contradiction.</em> Therefore E = 0 in the interior. ∎
+        </div>
+        <div class="ctrl-panel">
+          <canvas id="joy" class="ctrl-canvas" width="88" height="88"></canvas>
+          <div class="ctrl-info">
+            <div class="ctrl-value" id="joy-val">E₀ = 0</div>
+            <div class="ctrl-label">Drag to apply a constant field everywhere.</div>
+          </div>
+        </div>
+        <div class="btn-row"><button class="reset-btn" onclick="resetField1()">↺ RESET E₀ = 0</button></div>
+        <div id="status1" class="state-indicator state-normal">E = 0 — STATIC</div>
+      </div>
+    </div>
+    <div>
+      <div class="section-label">Proof II — Surface Field Direction</div>
+      <div class="proof-card" id="card2">
+        <h3>E ⊥ surface (no tangential component)</h3>
+        <p>The arc rotates the outside surface field from the physical <strong>r̂</strong> direction toward the tangential <strong>−θ̂</strong> direction.</p>
+        <div class="consequence" id="cons2">
+          A tangential component F∥ = qE∥ pushes surface electrons around the sphere — motion, not statics. <em>Contradiction.</em> Therefore E must be purely radial. ∎
+        </div>
+        <div class="ctrl-panel">
+          <canvas id="arc" class="ctrl-canvas" width="88" height="88"></canvas>
+          <div class="ctrl-info">
+            <div class="ctrl-value" id="arc-val">θ = 0° (r̂)</div>
+            <div class="ctrl-label">Drag from r̂ (normal) to −θ̂ (tangential).</div>
+          </div>
+        </div>
+        <div class="btn-row"><button class="reset-btn" onclick="resetField2()">↺ RESET TO r̂</button></div>
+        <div id="status2" class="state-indicator state-normal">E ⊥ SURFACE — STATIC</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TAB: Corollary I ═══ -->
+<div class="tab-panel" id="tab-corollary1">
+  <div class="canvas-area">
+    <canvas id="corollaryCanvas"></canvas>
+    <div class="path-toggle-row">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:0.63rem;color:var(--muted);letter-spacing:0.1em;margin-right:0.3rem;">PATH TYPE</span>
+      <button class="path-toggle-btn active" id="btn-bulk" onclick="setPathMode('bulk')">BULK (STRAIGHT)</button>
+      <button class="path-toggle-btn" id="btn-surface" onclick="setPathMode('surface')">SURFACE (ARC)</button>
+    </div>
+    <p class="caption">Drag the endpoints (●) to move the path. The potential V = 10 V inside, V = 10R/r outside.</p>
+  </div>
+  <div class="sidebar">
+    <div class="delta-v-display">
+      <span class="dv-label">POTENTIAL DIFFERENCE</span>
+      <span class="dv-value" id="dv-value">ΔV = 0.00 V</span>
+      <span class="dv-reason" id="dv-reason"></span>
+    </div>
+    <div class="corollary-card">
+      <h3>Whole conductor is an equipotential</h3>
+      <p>For any path inside the bulk, E = 0 everywhere along it, so:</p>
+      <span class="math">V(b) − V(a) = −∫ E · dr = −∫ 0 dr = 0</span>
+      <p>For any path along the surface, E ⊥ dl everywhere, so:</p>
+      <span class="math">V(b) − V(a) = −∫ E · dl = −∫ E∥ dl = 0</span>
+      <p>Therefore V is constant throughout the conductor and its surface.</p>
+    </div>
+    <div class="corollary-card">
+      <h3>Legend</h3>
+      <div class="legend" style="margin-top:0.4rem">
+        <div class="legend-item"><div class="legend-dot" style="background:#e8c96d;width:12px;height:12px"></div>Endpoint A (drag me)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#6dd9e8;width:12px;height:12px"></div>Endpoint B (drag me)</div>
+        <div class="legend-item"><div style="width:18px;height:2px;background:rgba(255,200,100,0.7);flex-shrink:0"></div>Integration path</div>
+        <div class="legend-item"><div style="width:18px;height:10px;background:linear-gradient(to right,#0d0f14,#2a4a8a,#6dd9e8);border-radius:2px;flex-shrink:0"></div>Potential V (colour)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  SHARED STATE
+// ═══════════════════════════════════════════════════════════════════
+let netCharge = 0;          // integer, -8..8
+let bulkENorm = {x:0,y:0};  // unit direction × magnitude (0..1)
+let surfFrac  = 0;          // 0=radial(r̂), 1=tangential(-θ̂)
+
+// ═══════════════════════════════════════════════════════════════════
+//  MAIN CANVAS
+// ═══════════════════════════════════════════════════════════════════
+const MC = document.getElementById('mainCanvas');
+const ctx = MC.getContext('2d');
+
+let CX, CY, R;   // sphere centre and radius (set on resize)
+
+function resize(){
+  const rect = MC.parentElement.getBoundingClientRect();
+  MC.width  = rect.width - 32;
+  MC.height = Math.min(500, window.innerHeight - 175);
+  CX = MC.width  / 2;
+  CY = MC.height / 2;
+  R  = Math.min(CX, CY) * 0.52;
+  buildGrid();
+  buildSurface();
+  invalidateHeatmap();
+}
+
+// ── Grid of nuclei + bulk electrons ──────────────────────────────
+// We want a square grid clipped to the sphere interior.
+const GRID_SPACING = 38;  // px between grid points
+let nucGrid = [];          // [{x,y}] fixed
+let bulkElec = [];         // [{x,y,vx,vy}] mobile
+let surfPts  = [];         // [{x,y,t,t0,sign}] surface charges
+
+function buildGrid(){
+  nucGrid=[]; bulkElec=[];
+  const cols = Math.floor((2*R) / GRID_SPACING) + 2;
+  const rows = Math.floor((2*R) / GRID_SPACING) + 2;
+  const ox = CX - (cols-1)*GRID_SPACING/2;
+  const oy = CY - (rows-1)*GRID_SPACING/2;
+  for(let row=0; row<rows; row++){
+    for(let col=0; col<cols; col++){
+      const x = ox + col*GRID_SPACING;
+      const y = oy + row*GRID_SPACING;
+      // Nuclei only drawn inside circle, but we place them everywhere in the square
+      // so the electron grid has matching partners for the full periodic domain
+      nucGrid.push({x, y, inside: Math.hypot(x-CX,y-CY) < R*0.88});
+      bulkElec.push({x, y, x0:x, y0:y, vx:0, vy:0});
+    }
+  }
+}
+
+function buildSurface(){
+  surfPts=[];
+  const N = 80;  // 10 per charge unit × max |Q|=8
+  for(let i=0;i<N;i++){
+    const t = (i/N)*Math.PI*2;
+    surfPts.push({x:CX+R*Math.cos(t), y:CY+R*Math.sin(t), t, t0:t, vt:0});
+  }
+}
+
+// ── Field functions ───────────────────────────────────────────────
+// All in "physics units" where R=1, |E| from charge ~ netCharge/r²
+// We scale to canvas pixels for display.
+
+const K = 8000;  // field strength scale (canvas px units for Q=1 at r=R)
+
+// Field from the sphere charge, valid outside only.
+// Returns {ex,ey} in canvas px/unit.
+function sphereField(wx, wy){
+  const dx = wx-CX, dy = wy-CY;
+  const r2 = dx*dx + dy*dy;
+  const r  = Math.sqrt(r2);
+  if(r < 1) return {ex:0,ey:0};
+  // E = K*Q/r² * r̂, scaled so that at r=R it equals K*Q/R²
+  const mag = K * netCharge / r2;
+  return { ex: mag*dx/r, ey: mag*dy/r };
+}
+
+// Surface field at r=R for Q units: K*Q/R². Used both for field scaling and physics.
+// Floor at Q=1 so there's always a meaningful scale even when Q=0.
+function getEMAX(){
+  return K * Math.max(1, Math.abs(netCharge)) / (R * R);
+}
+
+// Combined field at a world point (wx,wy):
+//   inside sphere:  just the applied bulk field
+//   outside sphere: sphere field + applied bulk field
+// surfFrac rotates the OUTSIDE field's radial component toward -θ̂
+function fieldAt(wx, wy){
+  const dx=wx-CX, dy=wy-CY, r=Math.hypot(dx,dy);
+  const inside = r < R;
+
+  // Applied constant field — scaled to match surface field at current Q
+  const EMAX = getEMAX();
+  const eax = bulkENorm.x * EMAX;
+  const eay = bulkENorm.y * EMAX;
+
+  if(inside){
+    // inside: only the applied field (the proof-I field)
+    return { ex: eax, ey: eay };
+  }
+
+  // outside: sphere field rotated by surfFrac, plus applied
+  const sf = sphereField(wx,wy);
+  // r̂ component is sf itself; -θ̂ = rotate r̂ by +90°: (-r̂_y, r̂_x) ... wait:
+  // r̂ = (dx/r, dy/r). θ̂ = (-dy/r, dx/r).  -θ̂ = (dy/r, -dx/r)
+  const rhat = {x:dx/r, y:dy/r};
+  const neg_thetahat = {x:dy/r, y:-dx/r};
+  const smag = Math.hypot(sf.ex, sf.ey);
+  // blend direction: (1-f)*r̂ + f*(-θ̂), renormalised, then scale by smag
+  const bx = (1-surfFrac)*rhat.x + surfFrac*neg_thetahat.x;
+  const by = (1-surfFrac)*rhat.y + surfFrac*neg_thetahat.y;
+  const bl = Math.hypot(bx,by)||1;
+  return {
+    ex: smag*bx/bl + eax,
+    ey: smag*by/bl + eay
+  };
+}
+
+// ── Heatmap ───────────────────────────────────────────────────────
+let heatBuf = null;
+let heatDirty = true;
+const HEAT_CELL = 8;  // pixels per heatmap cell
+
+function invalidateHeatmap(){ heatDirty=true; }
+
+function buildHeatmap(){
+  const W = MC.width, H = MC.height;
+  const cols = Math.ceil(W/HEAT_CELL), rows = Math.ceil(H/HEAT_CELL);
+  heatBuf = {cols,rows,data:new Float32Array(cols*rows)};
+  // Use a stable reference: field at the surface for max charge (Q=8).
+  // This keeps the colour scale fixed as the user adjusts things.
+  const refField = K * 8 / (R * R);
+  for(let row=0;row<rows;row++){
+    for(let col=0;col<cols;col++){
+      const wx=col*HEAT_CELL+HEAT_CELL/2, wy=row*HEAT_CELL+HEAT_CELL/2;
+      const r=Math.hypot(wx-CX,wy-CY);
+      if(r<R*0.98){
+        heatBuf.data[row*cols+col]=0; continue;
+      }
+      const f=fieldAt(wx,wy);
+      const mag=Math.hypot(f.ex,f.ey);
+      heatBuf.data[row*cols+col]=mag;
+    }
+  }
+  heatBuf.refField = refField;
+  heatDirty=false;
+}
+
+function drawHeatmap(){
+  if(heatDirty) buildHeatmap();
+  const {cols,rows,data,refField}=heatBuf;
+  for(let row=0;row<rows;row++){
+    for(let col=0;col<cols;col++){
+      const raw=data[row*cols+col];
+      if(raw<=0){ ctx.fillStyle='#0d0f14'; ctx.fillRect(col*HEAT_CELL,row*HEAT_CELL,HEAT_CELL,HEAT_CELL); continue; }
+      // Clamp to [0,1] against the fixed reference, then apply gamma
+      const v = Math.min(1, raw / refField);
+      const t = Math.pow(v, 0.38);
+      let rr,gg,bb;
+      if(t<0.33){
+        const s=t/0.33;
+        rr=Math.round(13); gg=Math.round(15+s*20); bb=Math.round(20+s*80);
+      } else if(t<0.66){
+        const s=(t-0.33)/0.33;
+        rr=Math.round(13+s*30); gg=Math.round(35+s*130); bb=Math.round(100+s*120);
+      } else {
+        const s=(t-0.66)/0.34;
+        rr=Math.round(43+s*212); gg=Math.round(165+s*90); bb=Math.round(220+s*35);
+      }
+      ctx.fillStyle=`rgb(${rr},${gg},${bb})`;
+      ctx.fillRect(col*HEAT_CELL,row*HEAT_CELL,HEAT_CELL,HEAT_CELL);
+    }
+  }
+}
+
+// ── Stream plot ───────────────────────────────────────────────────
+const STEP = 3;  // integration step (px) — module scope so traceStreamline can see it
+
+function drawStreamlines(){
+  // Seed points: ring slightly outside sphere + edges of canvas
+  const seeds=[];
+  const NS=20;
+  for(let i=0;i<NS;i++){
+    const t=(i/NS)*Math.PI*2;
+    seeds.push({x:CX+(R+12)*Math.cos(t), y:CY+(R+12)*Math.sin(t)});
+  }
+  // also seed from left/right/top/bottom edges for applied field
+  if(Math.hypot(bulkENorm.x,bulkENorm.y)>0.05){
+    const NE=8;
+    for(let i=0;i<NE;i++){
+      const f=(i+0.5)/NE;
+      seeds.push({x:2,                y:f*MC.height});
+      seeds.push({x:MC.width-2,       y:f*MC.height});
+      seeds.push({x:f*MC.width,       y:2});
+      seeds.push({x:f*MC.width,       y:MC.height-2});
+    }
+  }
+
+  ctx.save();
+  ctx.strokeStyle='rgba(180,210,255,0.55)';
+  ctx.lineWidth=1.2;
+  ctx.lineCap='round';
+
+  for(const seed of seeds){
+    // integrate forward
+    traceStreamline(seed.x, seed.y, +1);
+    // integrate backward (for lines coming into the sphere from infinity)
+    traceStreamline(seed.x, seed.y, -1);
+  }
+  ctx.restore();
+}
+
+function traceStreamline(x0,y0,dir){
+  let x=x0,y=y0;
+  ctx.beginPath(); ctx.moveTo(x,y);
+  let lastArrow=0;
+  for(let step=0;step<600;step++){
+    const f=fieldAt(x,y);
+    const mag=Math.hypot(f.ex,f.ey);
+    if(mag<0.01) break;
+    const nx=f.ex/mag, ny=f.ey/mag;
+    const nx2=x+dir*STEP*nx, ny2=y+dir*STEP*ny;
+    // stop if exits canvas
+    if(nx2<0||nx2>MC.width||ny2<0||ny2>MC.height) break;
+    // stop if enters sphere (from outside) or exits sphere (from inside)
+    const r1=Math.hypot(x-CX,y-CY), r2=Math.hypot(nx2-CX,ny2-CY);
+    const crossesSurface=(r1<R)!==(r2<R);
+    if(crossesSurface) break;
+    x=nx2; y=ny2;
+    ctx.lineTo(x,y);
+    lastArrow++;
+    // draw arrowhead every ~80 steps
+    if(lastArrow>80){
+      lastArrow=0;
+      drawStreamArrow(x,y,dir*nx,dir*ny);
+    }
+  }
+  ctx.stroke();
+}
+
+function drawStreamArrow(x,y,dx,dy){
+  const sz=5, a=Math.atan2(dy,dx);
+  ctx.save();
+  ctx.fillStyle='rgba(180,210,255,0.7)';
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x-sz*Math.cos(a-0.4),y-sz*Math.sin(a-0.4));
+  ctx.lineTo(x-sz*Math.cos(a+0.4),y-sz*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+// ── Sphere drawing ────────────────────────────────────────────────
+function drawSphere(){
+  // Fill
+  const g=ctx.createRadialGradient(CX-R*0.2,CY-R*0.25,R*0.05, CX,CY,R);
+  g.addColorStop(0,'#1e2438'); g.addColorStop(1,'#0f1220');
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.fillStyle=g; ctx.fill();
+  // Rim
+  ctx.strokeStyle='#3a4468'; ctx.lineWidth=1.5; ctx.stroke();
+}
+
+// ── Particles ─────────────────────────────────────────────────────
+function drawNuclei(){
+  ctx.save();
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2); ctx.clip();
+  for(const n of nucGrid){
+    if(!n.inside) continue;  // only draw nuclei within the circle
+    const g=ctx.createRadialGradient(n.x-1,n.y-1,0.5,n.x,n.y,5);
+    g.addColorStop(0,'#ffe090'); g.addColorStop(1,'#b87820');
+    ctx.beginPath(); ctx.arc(n.x,n.y,4.5,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    ctx.fillStyle='#1a1400'; ctx.font='7px JetBrains Mono';
+    ctx.fillText('+',n.x-3,n.y+2.5);
+  }
+  ctx.restore();
+}
+
+function drawBulkElectrons(){
+  const mag=Math.hypot(bulkENorm.x,bulkENorm.y);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2); ctx.clip();
+  for(const e of bulkElec){
+    const spd=Math.hypot(e.vx,e.vy);
+    // motion trail
+    if(mag>0.05&&spd>0.5){
+      const alpha=Math.min(0.35,spd/10);
+      ctx.strokeStyle=`rgba(109,217,232,${alpha})`;
+      ctx.lineWidth=1.3; ctx.lineCap='round';
+      ctx.beginPath();
+      ctx.moveTo(e.x-e.vx*5,e.y-e.vy*5);
+      ctx.lineTo(e.x,e.y); ctx.stroke();
+    }
+    const active=mag>0.05;
+    const gr=active?7+spd*0.6:5.5;
+    const ec=active?'#9ae8ff':'#6dd9e8';
+    const g=ctx.createRadialGradient(e.x,e.y,0.5,e.x,e.y,gr);
+    g.addColorStop(0,ec); g.addColorStop(1,'rgba(109,217,232,0)');
+    ctx.beginPath(); ctx.arc(e.x,e.y,gr,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    ctx.beginPath(); ctx.arc(e.x,e.y,3.2,0,Math.PI*2);
+    ctx.fillStyle=ec; ctx.fill();
+    ctx.fillStyle='#062020'; ctx.font='7px JetBrains Mono';
+    ctx.fillText('−',e.x-3,e.y+2.5);
+  }
+  ctx.restore();
+}
+
+function drawSurfaceCharges(){
+  // Determine how many excess charges and their sign
+  // Q positive → positive excess → show + ions at surface (remove electrons)
+  // Q negative → negative excess → show extra electrons at surface
+  // netCharge is an integer; we show |netCharge| marked charges and the rest neutral
+  const N=surfPts.length;
+  for(let i=0;i<N;i++){
+    const sp=surfPts[i];
+    // 10 excess charges per unit of netCharge, evenly distributed around the ring
+    const excessCount = Math.abs(netCharge) * 10;
+    const sign = netCharge >= 0 ? 1 : -1;
+    const marked = excessCount >= N ? true : Math.floor((i+1)*excessCount/N) > Math.floor(i*excessCount/N);
+
+    // Colour and symbol
+    let col, sym;
+    if(netCharge===0 || !marked){
+      // neutral surface — show faint blue electrons (part of neutral atom)
+      col='#6dd9e8'; sym='−';
+    } else if(sign>0){
+      // positive surface charge: missing electron → show nucleus/+
+      col='#e8c96d'; sym='+';
+    } else {
+      // negative surface charge: extra electron
+      col='#ff7070'; sym='−';
+    }
+
+    // sliding animation for Proof II
+    const moving = surfFrac > 0.1 && Math.abs(sp.vt||0) > 0.0003;
+    const drawCol=moving?'#ff9090':col;
+
+    const g=ctx.createRadialGradient(sp.x,sp.y,0.5,sp.x,sp.y,7);
+    g.addColorStop(0,drawCol); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,7,0,Math.PI*2);
+    ctx.fillStyle=g; ctx.fill();
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,4,0,Math.PI*2);
+    ctx.fillStyle=drawCol; ctx.fill();
+    ctx.fillStyle='#060a10'; ctx.font='7px JetBrains Mono';
+    ctx.fillText(sym,sp.x-3,sp.y+2.5);
+
+    // motion arrow
+    if(moving&&Math.abs(sp.vt)>0.0003){
+      const t=sp.t, p2x=CX+R*Math.cos(t+0.01), p2y=CY+R*Math.sin(t+0.01);
+      const tx2=p2x-sp.x, ty2=p2y-sp.y, tL=Math.hypot(tx2,ty2);
+      const al=Math.min(24, Math.abs(sp.vt) * 4000);
+      ctx.strokeStyle='rgba(255,130,130,0.75)'; ctx.lineWidth=1.3;
+      ctx.beginPath(); ctx.moveTo(sp.x,sp.y); ctx.lineTo(sp.x+tx2/tL*al,sp.y+ty2/tL*al); ctx.stroke();
+      ctxArrow(sp.x+tx2/tL*al,sp.y+ty2/tL*al,tx2/tL,ty2/tL,'rgba(255,130,130,0.85)',5);
+    }
+  }
+}
+
+function ctxArrow(x,y,dx,dy,col,sz){
+  const a=Math.atan2(dy,dx);
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x-sz*Math.cos(a-0.4),y-sz*Math.sin(a-0.4));
+  ctx.lineTo(x-sz*Math.cos(a+0.4),y-sz*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+// ── Physics ───────────────────────────────────────────────────────
+function physBulkElec(dt){
+  const EMAX = getEMAX();
+  const eax = bulkENorm.x * EMAX;
+  const eay = bulkENorm.y * EMAX;
+  const mag = Math.hypot(eax, eay);
+  const MOBILITY = 1.5;  // px per dt per unit field — fast overdamped drift
+  // Periodic boundary box: square of side 2R centred on (CX,CY)
+  const half = R;
+  for(const e of bulkElec){
+    if(mag > 0.1){
+      e.vx = -eax * MOBILITY;
+      e.vy = -eay * MOBILITY;
+    } else {
+      e.vx = 0;
+      e.vy = 0;
+    }
+    e.x += e.vx * dt;
+    e.y += e.vy * dt;
+    // Periodic wrap within the [-R,+R]×[-R,+R] square around the centre
+    let dx = e.x - CX, dy = e.y - CY;
+    if(dx >  half) dx -= 2*half;
+    if(dx < -half) dx += 2*half;
+    if(dy >  half) dy -= 2*half;
+    if(dy < -half) dy += 2*half;
+    e.x = CX + dx;
+    e.y = CY + dy;
+  }
+}
+
+function physSurf(dt){
+  // overdamped: angular velocity ∝ surfFrac (tangential field strength)
+  const SURF_MOBILITY = 0.004;
+  const vtDrift = surfFrac * SURF_MOBILITY * dt;
+  for(const sp of surfPts){
+    if(surfFrac > 0.02){
+      sp.vt = vtDrift;   // velocity set directly, not accumulated
+      sp.t += sp.vt;
+      sp.x = CX + R*Math.cos(sp.t); sp.y = CY + R*Math.sin(sp.t);
+    } else {
+      sp.vt = 0;
+      sp.t += (sp.t0 - sp.t) * 0.06;  // relax back to rest position
+      sp.x = CX + R*Math.cos(sp.t); sp.y = CY + R*Math.sin(sp.t);
+    }
+  }
+}
+
+// ── Main draw ─────────────────────────────────────────────────────
+function drawMain(){
+  ctx.clearRect(0,0,MC.width,MC.height);
+  // 1. Background fill
+  ctx.fillStyle='#0d0f14'; ctx.fillRect(0,0,MC.width,MC.height);
+  // 2. Heatmap (outside sphere region only — we clip inside when drawing sphere)
+  drawHeatmap();
+  // 3. Streamlines (outside sphere)
+  drawStreamlines();
+  // 4. Sphere body (covers interior, draws gradient)
+  drawSphere();
+  // 5. Grid nuclei (clipped to sphere)
+  drawNuclei();
+  // 6. Bulk electrons (clipped to sphere)
+  drawBulkElectrons();
+  // 7. Surface charges
+  drawSurfaceCharges();
+  // 8. Sphere outline on top
+  ctx.beginPath(); ctx.arc(CX,CY,R,0,Math.PI*2);
+  ctx.strokeStyle='rgba(90,110,180,0.6)'; ctx.lineWidth=1; ctx.stroke();
+}
+
+// ── Animation loop ────────────────────────────────────────────────
+let lastT=0;
+function loop(t){
+  const dt=Math.min((t-lastT)/16,3); lastT=t;
+  physBulkElec(dt);
+  physSurf(dt);
+  drawMain();
+  requestAnimationFrame(loop);
+}
+
+// ── Charge slider ─────────────────────────────────────────────────
+document.getElementById('chargeSlider').addEventListener('input', function(){
+  netCharge=parseInt(this.value);
+  document.getElementById('chargeVal').textContent=
+    netCharge>0?`Q = +${netCharge}`:netCharge<0?`Q = ${netCharge}`:'Q = 0';
+  invalidateHeatmap();
+});
+
+// ── Status helpers ────────────────────────────────────────────────
+function updateStatus1(){
+  const mag=Math.hypot(bulkENorm.x,bulkENorm.y);
+  const card=document.getElementById('card1'),cons=document.getElementById('cons1'),st=document.getElementById('status1');
+  const viol=mag>0.08;
+  card.classList.toggle('active',viol); cons.classList.toggle('visible',viol);
+  if(mag<0.02){st.textContent='E = 0 — STATIC';st.className='state-indicator state-normal';}
+  else if(!viol){st.textContent='WEAK E — SLIGHT MOTION';st.className='state-indicator state-caution';}
+  else{st.textContent='CONTRADICTION — MOTION!';st.className='state-indicator state-violation';}
+  invalidateHeatmap();
+}
+function updateStatus2(){
+  const card=document.getElementById('card2'),cons=document.getElementById('cons2'),st=document.getElementById('status2');
+  const viol=surfFrac>0.25;
+  card.classList.toggle('active',viol); cons.classList.toggle('visible',viol);
+  if(surfFrac<0.04){st.textContent='E ⊥ SURFACE — STATIC';st.className='state-indicator state-normal';}
+  else if(!viol){st.textContent='SMALL E∥ — BARELY MOVING';st.className='state-indicator state-caution';}
+  else{st.textContent='CONTRADICTION — SLIDING!';st.className='state-indicator state-violation';}
+  invalidateHeatmap();
+}
+
+function resetField1(){
+  bulkENorm={x:0,y:0}; joyDot={x:0,y:0};
+  for(const e of bulkElec){ e.x=e.x0; e.y=e.y0; e.vx=0; e.vy=0; }
+  updateStatus1(); drawJoy();
+}
+function resetField2(){
+  surfFrac=0;
+  for(const sp of surfPts){sp.vt=0;sp.t=sp.t0;sp.x=CX+R*Math.cos(sp.t0);sp.y=CY+R*Math.sin(sp.t0);}
+  updateStatus2(); drawArc();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CONTROL 1 — Joystick
+// ═══════════════════════════════════════════════════════════════════
+const joyC=document.getElementById('joy');
+const jctx=joyC.getContext('2d');
+const JW=joyC.width, JH=joyC.height, JCX=JW/2, JCY=JH/2, JRAD=JW/2-10;
+let joyDot={x:0,y:0}, joyDrag=false;
+
+function joyEvPos(e){
+  const r=joyC.getBoundingClientRect(), sx=JW/r.width, sy=JH/r.height;
+  const cx=(e.touches?e.touches[0].clientX:e.clientX), cy=(e.touches?e.touches[0].clientY:e.clientY);
+  return {x:(cx-r.left)*sx, y:(cy-r.top)*sy};
+}
+joyC.addEventListener('mousedown',  e=>{ joyDrag=true; joyUpdate(e); });
+joyC.addEventListener('touchstart', e=>{ e.preventDefault(); joyDrag=true; joyUpdate(e); },{passive:false});
+window.addEventListener('mousemove', e=>{ if(joyDrag) joyUpdate(e); });
+window.addEventListener('touchmove', e=>{ if(joyDrag){e.preventDefault();joyUpdate(e);} },{passive:false});
+window.addEventListener('mouseup',   ()=>joyDrag=false);
+window.addEventListener('touchend',  ()=>joyDrag=false);
+
+function joyUpdate(e){
+  const p=joyEvPos(e);
+  let dx=(p.x-JCX)/JRAD, dy=(p.y-JCY)/JRAD;
+  const m=Math.hypot(dx,dy); if(m>1){dx/=m;dy/=m;}
+  joyDot={x:dx,y:dy};
+  bulkENorm={x:dx,y:dy};
+  // kick electrons
+  const emag=Math.hypot(dx,dy);
+  if(emag>0.05) for(const e of bulkElec) if(Math.hypot(e.vx,e.vy)<0.2){e.vx=(Math.random()-0.5)*0.3;e.vy=(Math.random()-0.5)*0.3;}
+  updateStatus1(); drawJoy();
+}
+
+function drawJoy(){
+  jctx.clearRect(0,0,JW,JH);
+  // bg disc
+  jctx.beginPath(); jctx.arc(JCX,JCY,JRAD+6,0,Math.PI*2);
+  jctx.fillStyle='#080a10'; jctx.fill();
+  // rings
+  for(const f of [0.33,0.67,1.0]){
+    jctx.beginPath(); jctx.arc(JCX,JCY,JRAD*f,0,Math.PI*2);
+    jctx.strokeStyle=`rgba(58,64,96,${f===1?0.65:0.3})`; jctx.lineWidth=1; jctx.stroke();
+  }
+  // crosshair
+  jctx.strokeStyle='rgba(58,64,96,0.45)'; jctx.lineWidth=1;
+  jctx.beginPath(); jctx.moveTo(JCX-JRAD,JCY); jctx.lineTo(JCX+JRAD,JCY); jctx.stroke();
+  jctx.beginPath(); jctx.moveTo(JCX,JCY-JRAD); jctx.lineTo(JCX,JCY+JRAD); jctx.stroke();
+  // spoke + arrowhead
+  const {x:dx,y:dy}=joyDot, mag=Math.hypot(dx,dy);
+  const dpx=JCX+dx*JRAD, dpy=JCY+dy*JRAD;
+  if(mag>0.04){
+    const col=`rgba(232,160,96,${0.3+mag*0.6})`;
+    jctx.strokeStyle=col; jctx.lineWidth=1.5; jctx.lineCap='round';
+    jctx.beginPath(); jctx.moveTo(JCX,JCY); jctx.lineTo(dpx,dpy); jctx.stroke();
+    const ang=Math.atan2(dy,dx),sz=6;
+    jctx.fillStyle=col; jctx.beginPath();
+    jctx.moveTo(dpx,dpy);
+    jctx.lineTo(dpx-sz*Math.cos(ang-0.4),dpy-sz*Math.sin(ang-0.4));
+    jctx.lineTo(dpx-sz*Math.cos(ang+0.4),dpy-sz*Math.sin(ang+0.4));
+    jctx.closePath(); jctx.fill();
+  }
+  // dot
+  jctx.beginPath(); jctx.arc(dpx,dpy,7,0,Math.PI*2);
+  jctx.fillStyle=joyDrag?'#ffcc66':(mag>0.05?'#e8a060':'#3a4468'); jctx.fill();
+  jctx.strokeStyle='#080a10'; jctx.lineWidth=1.5; jctx.stroke();
+  // centre pip
+  jctx.beginPath(); jctx.arc(JCX,JCY,2.5,0,Math.PI*2); jctx.fillStyle='#3a4468'; jctx.fill();
+  // readout
+  const pct=Math.round(mag*100);
+  document.getElementById('joy-val').textContent = mag<0.02 ? 'E₀ = 0' : `|E₀| = ${pct}%`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CONTROL 2 — Arc slider
+// ═══════════════════════════════════════════════════════════════════
+const arcC=document.getElementById('arc');
+const actx=arcC.getContext('2d');
+const AW=arcC.width, AH=arcC.height;
+// Arc from "up" (r̂, ⊥ to surface) sweeping +90° to "right-ish" (-θ̂, ∥ to surface)
+// Origin at bottom-left of canvas, arc sweeps in upper-right quadrant
+const ACX=12, ACY=AH-12, ARAD=AW-20;
+const ARC_START=-Math.PI/2, ARC_END=0;
+
+function arcFracToAngle(f){ return ARC_START+f*(ARC_END-ARC_START); }
+function arcDotXY(f){ const a=arcFracToAngle(f); return {x:ACX+ARAD*Math.cos(a), y:ACY+ARAD*Math.sin(a)}; }
+function arcCanvasToFrac(px,py){
+  const a=Math.atan2(py-ACY,px-ACX);
+  return Math.max(0,Math.min(1,(a-ARC_START)/(ARC_END-ARC_START)));
+}
+
+let arcDrag=false;
+function arcEvPos(e){
+  const r=arcC.getBoundingClientRect(),sx=AW/r.width,sy=AH/r.height;
+  const cx=(e.touches?e.touches[0].clientX:e.clientX),cy=(e.touches?e.touches[0].clientY:e.clientY);
+  return {x:(cx-r.left)*sx,y:(cy-r.top)*sy};
+}
+arcC.addEventListener('mousedown',  e=>{ arcDrag=true; arcUpdate(e); });
+arcC.addEventListener('touchstart', e=>{ e.preventDefault(); arcDrag=true; arcUpdate(e); },{passive:false});
+window.addEventListener('mousemove', e=>{ if(arcDrag) arcUpdate(e); });
+window.addEventListener('touchmove', e=>{ if(arcDrag){e.preventDefault();arcUpdate(e);} },{passive:false});
+window.addEventListener('mouseup',   ()=>{ arcDrag=false; drawArc(); });
+window.addEventListener('touchend',  ()=>{ arcDrag=false; drawArc(); });
+
+function arcUpdate(e){
+  const p=arcEvPos(e);
+  surfFrac=arcCanvasToFrac(p.x,p.y);
+  updateStatus2(); drawArc();
+}
+
+function drawArc(){
+  actx.clearRect(0,0,AW,AH);
+  actx.fillStyle='#080a10'; actx.fillRect(0,0,AW,AH);
+  // track
+  actx.beginPath(); actx.arc(ACX,ACY,ARAD,ARC_START,ARC_END);
+  actx.strokeStyle='rgba(58,64,96,0.65)'; actx.lineWidth=3; actx.lineCap='round'; actx.stroke();
+  // filled portion
+  const f=surfFrac;
+  const rr=Math.round(109+(255-109)*f), gg=Math.round(217-(217-90)*f), bb=Math.round(232-(232-80)*f);
+  const col=`rgb(${rr},${gg},${bb})`;
+  if(f>0.01){
+    actx.beginPath(); actx.arc(ACX,ACY,ARAD,ARC_START,arcFracToAngle(f));
+    actx.strokeStyle=col; actx.lineWidth=3; actx.stroke();
+  }
+  // end labels
+  const p0=arcDotXY(0), p1=arcDotXY(1);
+  actx.font='bold 9px JetBrains Mono';
+  actx.fillStyle='rgba(109,217,232,0.75)'; actx.fillText('r̂',p0.x-6,p0.y-6);
+  actx.fillStyle='rgba(232,109,109,0.75)'; actx.fillText('−θ̂',p1.x+3,p1.y+10);
+  // spoke dashes
+  actx.setLineDash([3,3]);
+  actx.strokeStyle='rgba(109,217,232,0.18)'; actx.lineWidth=1;
+  actx.beginPath(); actx.moveTo(ACX,ACY); actx.lineTo(p0.x,p0.y); actx.stroke();
+  actx.strokeStyle='rgba(232,109,109,0.18)';
+  actx.beginPath(); actx.moveTo(ACX,ACY); actx.lineTo(p1.x,p1.y); actx.stroke();
+  actx.setLineDash([]);
+  // current spoke
+  const dp=arcDotXY(f);
+  actx.strokeStyle=`rgba(${rr},${gg},${bb},0.3)`; actx.lineWidth=1.2;
+  actx.beginPath(); actx.moveTo(ACX,ACY); actx.lineTo(dp.x,dp.y); actx.stroke();
+  // dot
+  actx.beginPath(); actx.arc(dp.x,dp.y,7,0,Math.PI*2);
+  actx.fillStyle=arcDrag?'#ffcc66':col; actx.fill();
+  actx.strokeStyle='#080a10'; actx.lineWidth=1.5; actx.stroke();
+  // label
+  document.getElementById('arc-val').textContent=
+    f<0.03?'θ = 0° (r̂)':f>0.97?'θ = 90° (−θ̂)':`θ = ${Math.round(f*90)}°`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════════════════════
+let activeTab = 'proofs';
+function switchTab(name){
+  activeTab = name;
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  // match button by its onclick attribute
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    if(b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+name+"'")) b.classList.add('active');
+  });
+  if(name==='corollary1') resizeCorollary();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  COROLLARY I — EQUIPOTENTIAL CANVAS
+// ═══════════════════════════════════════════════════════════════════
+const CC  = document.getElementById('corollaryCanvas');
+const cctx = CC.getContext('2d');
+
+let CCX, CCY, CR;           // centre and radius
+const V0  = 10;             // potential inside conductor (Volts)
+
+// Path endpoints in canvas coords
+let ptA = null, ptB = null;
+let pathMode = 'bulk';      // 'bulk' | 'surface'
+let dragTarget = null;      // 'A' | 'B' | null
+
+function resizeCorollary(){
+  const rect = CC.parentElement.getBoundingClientRect();
+  CC.width  = rect.width - 32;
+  CC.height = Math.min(500, window.innerHeight - 185);
+  CCX = CC.width  / 2;
+  CCY = CC.height / 2;
+  CR  = Math.min(CCX, CCY) * 0.50;
+  // Default endpoint positions
+  if(!ptA) ptA = { x: CCX, y: CCY - CR*0.4 };
+  if(!ptB) ptB = { x: CCX + CR*0.3, y: CCY + CR*0.3 };
+  clampEndpoints();
+  drawCorollary();
+}
+
+// ── Potential field ───────────────────────────────────────────────
+function potential(x, y){
+  const r = Math.hypot(x - CCX, y - CCY);
+  if(r <= CR) return V0;
+  return V0 * CR / r;
+}
+
+// ── Path mode ─────────────────────────────────────────────────────
+function setPathMode(mode){
+  pathMode = mode;
+  document.getElementById('btn-bulk').classList.toggle('active', mode==='bulk');
+  document.getElementById('btn-surface').classList.toggle('active', mode==='surface');
+  // Snap endpoints to surface if switching to surface mode
+  if(mode === 'surface'){
+    ptA = snapToSurface(ptA);
+    ptB = snapToSurface(ptB);
+  }
+  drawCorollary();
+}
+
+function snapToSurface(pt){
+  const a = Math.atan2(pt.y - CCY, pt.x - CCX);
+  return { x: CCX + CR*Math.cos(a), y: CCY + CR*Math.sin(a) };
+}
+
+// Clamp: bulk = anywhere, surface = on circle rim
+function clampEndpoints(){
+  if(pathMode === 'surface'){
+    ptA = snapToSurface(ptA);
+    ptB = snapToSurface(ptB);
+  }
+}
+
+// ── ΔV calculation ────────────────────────────────────────────────
+function computeDeltaV(){
+  // Numerically integrate −E·dl along the path
+  // For bulk straight line: sample potential at many points
+  const N = 200;
+  let Va, Vb;
+  if(pathMode === 'bulk'){
+    Va = potential(ptA.x, ptA.y);
+    Vb = potential(ptB.x, ptB.y);
+    return Vb - Va;  // exact: ΔV = V(b)−V(a) from the potential definition
+  } else {
+    // Surface arc: both points are on the surface at V0 (inside) = V0 always
+    return 0;
+  }
+}
+
+// ── Drawing ───────────────────────────────────────────────────────
+function drawCorollary(){
+  const W = CC.width, H = CC.height;
+  cctx.clearRect(0,0,W,H);
+
+  // 1. Potential heatmap background
+  drawPotentialHeatmap();
+
+  // 2. Radial E-field lines outside
+  drawRadialFieldLines();
+
+  // 3. Sphere fill (covers interior with clean gradient)
+  drawConductorSphere();
+
+  // 4. "E = 0" label inside
+  cctx.fillStyle = 'rgba(200,220,255,0.55)';
+  cctx.font = 'italic 15px EB Garamond';
+  cctx.textAlign = 'center';
+  cctx.fillText('E = 0', CCX, CCY - 6);
+  cctx.font = '10px JetBrains Mono';
+  cctx.fillStyle = 'rgba(200,220,255,0.3)';
+  cctx.fillText('(inside conductor)', CCX, CCY + 10);
+  cctx.textAlign = 'left';
+
+  // 5. Integration path
+  drawPath();
+
+  // 6. Endpoint handles
+  drawHandle(ptA, '#e8c96d', 'A');
+  drawHandle(ptB, '#6dd9e8', 'B');
+
+  // 7. Update ΔV display
+  updateDeltaVDisplay();
+}
+
+// Potential colour: dark navy (V≈0) → deep blue → cyan (V=V0)
+function potentialColour(v){
+  const t = Math.max(0, Math.min(1, v / V0));
+  const g = Math.pow(t, 0.5);
+  if(g < 0.4){
+    const s = g/0.4;
+    return `rgb(${Math.round(13+s*15)},${Math.round(15+s*40)},${Math.round(20+s*110)})`;
+  } else if(g < 0.75){
+    const s = (g-0.4)/0.35;
+    return `rgb(${Math.round(28+s*20)},${Math.round(55+s*110)},${Math.round(130+s*90)})`;
+  } else {
+    const s = (g-0.75)/0.25;
+    return `rgb(${Math.round(48+s*60)},${Math.round(165+s*55)},${Math.round(220+s*35)})`;
+  }
+}
+
+const CHEAT_CELL = 6;
+function drawPotentialHeatmap(){
+  const cols = Math.ceil(CC.width/CHEAT_CELL), rows = Math.ceil(CC.height/CHEAT_CELL);
+  for(let row=0; row<rows; row++){
+    for(let col=0; col<cols; col++){
+      const wx = col*CHEAT_CELL + CHEAT_CELL/2;
+      const wy = row*CHEAT_CELL + CHEAT_CELL/2;
+      const v  = potential(wx, wy);
+      cctx.fillStyle = potentialColour(v);
+      cctx.fillRect(col*CHEAT_CELL, row*CHEAT_CELL, CHEAT_CELL, CHEAT_CELL);
+    }
+  }
+}
+
+function drawConductorSphere(){
+  // Solid interior so the heatmap shows through outside but interior is clean
+  cctx.beginPath(); cctx.arc(CCX, CCY, CR, 0, Math.PI*2);
+  // Fill with uniform V0 colour
+  cctx.fillStyle = potentialColour(V0);
+  cctx.fill();
+  // Thin rim
+  cctx.strokeStyle = 'rgba(180,210,255,0.5)'; cctx.lineWidth = 1.5; cctx.stroke();
+}
+
+function drawRadialFieldLines(){
+  const NL = 16;
+  cctx.save();
+  // Clip to canvas minus a small margin
+  cctx.rect(0, 0, CC.width, CC.height);
+  cctx.clip();
+  cctx.strokeStyle = 'rgba(180,210,255,0.45)';
+  cctx.lineWidth   = 1.1;
+  cctx.lineCap     = 'round';
+  for(let i=0; i<NL; i++){
+    const a  = (i/NL)*Math.PI*2;
+    const x0 = CCX + CR*Math.cos(a);
+    const y0 = CCY + CR*Math.sin(a);
+    // Extend far enough to always reach the canvas edge
+    const far = Math.max(CC.width, CC.height) * 1.5;
+    const x1 = CCX + far*Math.cos(a);
+    const y1 = CCY + far*Math.sin(a);
+    cctx.beginPath(); cctx.moveTo(x0, y0); cctx.lineTo(x1, y1); cctx.stroke();
+    // Arrowhead at 60% of the way from surface to edge
+    const frac = 0.42;
+    const ax = x0 + frac*(x1-x0);
+    const ay = y0 + frac*(y1-y0);
+    const sz = 5;
+    cctx.fillStyle = 'rgba(180,210,255,0.6)';
+    cctx.beginPath();
+    cctx.moveTo(ax, ay);
+    cctx.lineTo(ax - sz*Math.cos(a-0.4), ay - sz*Math.sin(a-0.4));
+    cctx.lineTo(ax - sz*Math.cos(a+0.4), ay - sz*Math.sin(a+0.4));
+    cctx.closePath(); cctx.fill();
+  }
+  cctx.restore();
+}
+
+function drawPath(){
+  if(!ptA || !ptB) return;
+  cctx.save();
+  cctx.strokeStyle = 'rgba(255,210,100,0.8)';
+  cctx.lineWidth   = 2;
+  cctx.lineCap     = 'round';
+  cctx.setLineDash([6,4]);
+
+  if(pathMode === 'bulk'){
+    cctx.beginPath(); cctx.moveTo(ptA.x, ptA.y); cctx.lineTo(ptB.x, ptB.y); cctx.stroke();
+    // direction arrowhead at midpoint
+    const mx=(ptA.x+ptB.x)/2, my=(ptA.y+ptB.y)/2;
+    const ang=Math.atan2(ptB.y-ptA.y, ptB.x-ptA.x);
+    cctx.setLineDash([]);
+    cctx.fillStyle='rgba(255,210,100,0.85)';
+    const sz=7;
+    cctx.beginPath();
+    cctx.moveTo(mx,my);
+    cctx.lineTo(mx-sz*Math.cos(ang-0.4), my-sz*Math.sin(ang-0.4));
+    cctx.lineTo(mx-sz*Math.cos(ang+0.4), my-sz*Math.sin(ang+0.4));
+    cctx.closePath(); cctx.fill();
+  } else {
+    // Arc from ptA to ptB along the sphere surface
+    const aA = Math.atan2(ptA.y-CCY, ptA.x-CCX);
+    const aB = Math.atan2(ptB.y-CCY, ptB.x-CCX);
+    // Draw the shorter arc
+    cctx.beginPath(); cctx.arc(CCX, CCY, CR, aA, aB);
+    cctx.stroke();
+    // Arrow at midpoint of arc
+    cctx.setLineDash([]);
+    let aMid = (aA + aB) / 2;
+    // pick the mid that's on the shorter arc
+    if(Math.abs(aB-aA) > Math.PI) aMid += Math.PI;
+    const mx = CCX + CR*Math.cos(aMid);
+    const my = CCY + CR*Math.sin(aMid);
+    // tangent direction = perpendicular to radial
+    const tang = aMid + Math.PI/2;
+    cctx.fillStyle='rgba(255,210,100,0.85)';
+    const sz=7;
+    cctx.beginPath();
+    cctx.moveTo(mx,my);
+    cctx.lineTo(mx-sz*Math.cos(tang-0.4), my-sz*Math.sin(tang-0.4));
+    cctx.lineTo(mx-sz*Math.cos(tang+0.4), my-sz*Math.sin(tang+0.4));
+    cctx.closePath(); cctx.fill();
+  }
+  cctx.restore();
+}
+
+function drawHandle(pt, colour, label){
+  if(!pt) return;
+  // glow
+  const g = cctx.createRadialGradient(pt.x, pt.y, 2, pt.x, pt.y, 14);
+  g.addColorStop(0, colour);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  cctx.beginPath(); cctx.arc(pt.x, pt.y, 14, 0, Math.PI*2);
+  cctx.fillStyle = g; cctx.fill();
+  // dot
+  cctx.beginPath(); cctx.arc(pt.x, pt.y, 7, 0, Math.PI*2);
+  cctx.fillStyle = colour; cctx.fill();
+  cctx.strokeStyle = '#060a10'; cctx.lineWidth = 1.5; cctx.stroke();
+  // label
+  cctx.fillStyle = '#f0ece4';
+  cctx.font = 'bold 11px JetBrains Mono';
+  cctx.fillText(label, pt.x + 10, pt.y - 8);
+}
+
+function updateDeltaVDisplay(){
+  const dV  = computeDeltaV();
+  const val = document.getElementById('dv-value');
+  const rsn = document.getElementById('dv-reason');
+  const Va  = potential(ptA.x, ptA.y);
+  const Vb  = potential(ptB.x, ptB.y);
+
+  const absV = Math.abs(dV);
+  if(pathMode === 'surface'){
+    val.textContent  = 'ΔV = 0.00 V';
+    val.style.color  = '#6dd9e8';
+    rsn.textContent  = 'E ⊥ dl along the surface — the field does no work';
+  } else if(absV < 0.05){
+    val.textContent  = 'ΔV = 0.00 V';
+    val.style.color  = '#6dd9e8';
+    rsn.textContent  = 'E = 0 inside — no work done along any bulk path';
+  } else {
+    val.textContent  = `ΔV = ${dV >= 0 ? '+' : ''}${dV.toFixed(2)} V`;
+    val.style.color  = '#f0ece4';
+    rsn.textContent  = `V(A) = ${Va.toFixed(2)} V,  V(B) = ${Vb.toFixed(2)} V`;
+  }
+}
+
+// ── Corollary canvas interaction ──────────────────────────────────
+function ccPos(e){
+  const rect = CC.getBoundingClientRect();
+  const sx = CC.width/rect.width, sy = CC.height/rect.height;
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x:(cx-rect.left)*sx, y:(cy-rect.top)*sy };
+}
+
+function ccHit(pos, pt){ return pt && Math.hypot(pos.x-pt.x, pos.y-pt.y) < 18; }
+
+CC.addEventListener('mousedown', e=>{
+  const p = ccPos(e);
+  if(ccHit(p,ptA)) dragTarget='A';
+  else if(ccHit(p,ptB)) dragTarget='B';
+});
+CC.addEventListener('touchstart', e=>{ e.preventDefault(); const p=ccPos(e); if(ccHit(p,ptA)) dragTarget='A'; else if(ccHit(p,ptB)) dragTarget='B'; },{passive:false});
+
+window.addEventListener('mousemove', e=>{
+  if(!dragTarget || activeTab!=='corollary1') return;
+  const p = ccPos(e);
+  if(pathMode==='surface'){
+    const snapped = snapToSurface(p);
+    if(dragTarget==='A') ptA=snapped; else ptB=snapped;
+  } else {
+    if(dragTarget==='A') ptA=p; else ptB=p;
+  }
+  CC.style.cursor = 'grabbing';
+  drawCorollary();
+});
+window.addEventListener('touchmove', e=>{
+  if(!dragTarget || activeTab!=='corollary1') return;
+  e.preventDefault();
+  const p = ccPos(e);
+  if(pathMode==='surface'){
+    const snapped = snapToSurface(p);
+    if(dragTarget==='A') ptA=snapped; else ptB=snapped;
+  } else {
+    if(dragTarget==='A') ptA=p; else ptB=p;
+  }
+  drawCorollary();
+},{passive:false});
+
+window.addEventListener('mouseup',  ()=>{ if(dragTarget){ dragTarget=null; CC.style.cursor='default'; } });
+window.addEventListener('touchend', ()=>{ dragTarget=null; });
+
+CC.addEventListener('mousemove', e=>{
+  if(dragTarget) return;
+  const p = ccPos(e);
+  CC.style.cursor = (ccHit(p,ptA)||ccHit(p,ptB)) ? 'grab' : 'default';
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  Init
+// ═══════════════════════════════════════════════════════════════════
+window.addEventListener('resize', ()=>{
+  resize();
+  if(activeTab === 'corollary1') resizeCorollary();
+});
+resize();
+drawJoy(); drawArc();
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
