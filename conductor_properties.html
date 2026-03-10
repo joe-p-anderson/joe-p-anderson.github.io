@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conductor Properties — PHY 4300</title>
+
+<!-- Plotly -->
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+
+<!-- MathJax -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] },
+  options: { skipHtmlTags: ['script','noscript','style','textarea'] },
+  startup: { typeset: true }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" id="MathJax-script" async></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #F2EFE4;
+  --surface:   #FAF8F2;
+  --border:    #C8BFA0;
+  --border-dk: #8B7D5E;
+  --blue:      #1B4F8A;
+  --red:       #B81C1C;
+  --yellow:    #C8900A;
+  --black:     #1A1008;
+  --text:      #1A1008;
+  --text-dim:  #5C4F38;
+  --text-muted:#9C8C70;
+  --green:     #2A6E2A;
+  --font: 'Baskerville Old Face', 'Baskervville', 'Libre Baskerville', Baskerville, Georgia, serif;
+}
+
+html, body {
+  height: 100%;
+  background: #D8D0BC;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 18px;
+  overflow: hidden;
+}
+
+#page-wrapper {
+  max-width: 960px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-left: 1px solid var(--border-dk);
+  border-right: 1px solid var(--border-dk);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+#site-header {
+  border-bottom: 3px double var(--border-dk);
+  padding: 10px 20px 8px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+  flex-shrink: 0; background: var(--surface);
+}
+.header-titles { display: flex; flex-direction: column; gap: 2px; }
+.page-title { font-size: 24px; font-weight: bold; font-variant: small-caps; letter-spacing: 0.04em; color: var(--black); }
+.course-label { font-size: 16px; color: var(--text-dim); font-style: italic; }
+.dl-btn {
+  background: var(--blue); border: none; color: #fff; font-family: var(--font);
+  font-size: 16px; font-variant: small-caps; letter-spacing: 0.07em; padding: 5px 14px;
+  cursor: pointer; flex-shrink: 0; transition: background 0.15s;
+}
+.dl-btn:hover { background: #13376A; }
+
+/* ── Tab strip ── */
+.tab-strip { display: flex; border-bottom: 2px solid var(--border-dk); background: var(--surface); flex-shrink: 0; }
+.tab-btn {
+  background: none; border: none; border-right: 1px solid var(--border);
+  border-bottom: 3px solid transparent; color: var(--text-muted); font-family: var(--font);
+  font-size: 17px; font-variant: small-caps; letter-spacing: 0.05em; padding: 7px 20px 5px;
+  cursor: pointer; position: relative; bottom: -2px; transition: color 0.15s;
+}
+.tab-btn:hover { color: var(--blue); }
+.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); background: var(--bg); font-weight: bold; }
+
+/* ── Tab panes ── */
+.tab-pane { display: none; overflow: hidden; }
+.tab-pane.active {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  grid-template-rows: 1fr auto;
+  height: calc(100vh - 88px);
+}
+
+/* Frame 1: controls */
+.controls-col {
+  grid-column: 1; grid-row: 1 / 3;
+  border-right: 2px solid var(--border-dk);
+  overflow-y: auto; background: var(--surface);
+}
+
+/* Frame 2: plot */
+.plot-col {
+  grid-column: 2; grid-row: 1;
+  padding: 10px 12px 6px;
+  display: flex; align-items: flex-start; justify-content: center;
+  background: var(--bg); min-height: 0; overflow: hidden;
+}
+.plot-wrap {
+  /* Fixed square — JS reads this size and passes it to Plotly */
+  width: min(calc(100vh - 260px), calc(100% - 4px));
+  aspect-ratio: 1 / 1;
+  border: 1.5px solid var(--border-dk); background: var(--surface);
+  overflow: hidden; position: relative; flex-shrink: 0;
+}
+
+/* Frame 3: tasks */
+.tasks-row {
+  grid-column: 2; grid-row: 2;
+  border-top: 2px solid var(--border-dk); background: var(--surface);
+  display: flex; overflow-x: auto; max-height: 260px; overflow-y: auto;
+}
+.task-card {
+  flex: 1; min-width: 240px; padding: 10px 14px;
+  border-right: 1px solid var(--border); transition: opacity 0.25s;
+}
+.task-card:last-child { border-right: none; }
+.task-card.locked { opacity: 0.32; pointer-events: none; }
+
+/* ── Controls ── */
+.ctrl-section { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.ctrl-label {
+  font-size: 14px; font-variant: small-caps; letter-spacing: 0.22em;
+  color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;
+}
+.slider-group { margin-bottom: 12px; }
+.slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 6px; }
+.slider-name { font-size: 17px; font-style: italic; color: var(--black); flex-shrink: 0; }
+.slider-num-input {
+  width: 68px; border: 1px solid var(--border); border-radius: 0;
+  background: var(--bg); color: var(--blue); font-family: var(--font);
+  font-size: 16px; font-weight: bold; text-align: right; padding: 1px 4px;
+  outline: none; transition: border-color 0.15s; -moz-appearance: textfield;
+}
+.slider-num-input::-webkit-outer-spin-button,
+.slider-num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.slider-num-input:focus { border-color: var(--blue); background: var(--surface); }
+.slider-num-input.invalid { border-color: var(--red); color: var(--red); }
+.slider-row { display: flex; align-items: center; gap: 6px; }
+input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none; height: 3px;
+  background: var(--border); border-radius: 0; outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 13px; height: 13px; border-radius: 0;
+  background: var(--blue); border: 1.5px solid var(--black); cursor: pointer;
+}
+.reset-btn {
+  background: none; border: 1px solid var(--border-dk); color: var(--text-muted);
+  font-family: var(--font); font-size: 15px; padding: 2px 5px; cursor: pointer;
+  white-space: nowrap; transition: all 0.12s;
+}
+.reset-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+/* Toggle */
+.toggle-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.toggle-label { font-size: 16px; font-style: italic; color: var(--black); flex: 1; }
+.toggle-switch { position: relative; width: 38px; height: 20px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0; background: var(--border);
+  border: 1px solid var(--border-dk); cursor: pointer; transition: background 0.2s;
+}
+.toggle-switch input:checked + .toggle-track { background: var(--blue); }
+.toggle-track::after {
+  content: ''; position: absolute; left: 2px; top: 2px;
+  width: 14px; height: 14px; background: var(--surface);
+  border: 1px solid var(--border-dk); transition: transform 0.2s;
+}
+.toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+.toggle-switch input:disabled + .toggle-track { opacity: 0.4; cursor: not-allowed; }
+
+/* Joystick */
+.joystick-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 10px; }
+.joystick-canvas { cursor: crosshair; border: 1.5px solid var(--border-dk); background: var(--bg); display: block; }
+.joystick-caption { font-size: 13px; color: var(--text-muted); font-style: italic; text-align: center; }
+
+/* Metrics */
+.metric-line { font-size: 15px; color: var(--text-dim); line-height: 2.0; }
+.metric-line .mval { color: var(--blue); font-weight: bold; }
+.metric-big { font-size: 20px; color: var(--blue); font-weight: bold; text-align: center; padding: 8px 4px 4px; line-height: 1.3; }
+.metric-big-label { font-size: 13px; color: var(--text-muted); text-align: center; font-style: italic; margin-bottom: 6px; }
+
+/* Legend */
+.legend-row { display: flex; align-items: center; gap: 7px; font-size: 14px; margin-bottom: 5px; }
+.leg-swatch { display: inline-block; width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid var(--black); }
+
+/* Tasks */
+.task-title { font-size: 17px; font-weight: bold; font-variant: small-caps; letter-spacing: 0.04em; color: var(--black); margin-bottom: 5px; line-height: 1.3; }
+.task-prompt { font-size: 14px; color: var(--text-muted); font-style: italic; margin-bottom: 6px; line-height: 1.4; }
+.task-check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.check-btn {
+  background: none; border: 1.5px solid var(--blue); color: var(--blue);
+  font-family: var(--font); font-size: 16px; font-variant: small-caps;
+  letter-spacing: 0.08em; padding: 3px 10px; cursor: pointer; transition: all 0.12s;
+}
+.check-btn:hover { background: var(--blue); color: #fff; }
+.check-btn.done { border-color: var(--green); color: var(--green); pointer-events: none; }
+.check-btn.done::before { content: '✓ '; }
+.task-feedback { font-size: 14px; font-style: italic; opacity: 0; transition: opacity 0.2s; }
+.task-feedback.visible { opacity: 1; }
+.task-feedback.ok   { color: var(--green); }
+.task-feedback.fail { color: var(--red); }
+.question-prompt { font-size: 15px; color: var(--red); font-style: italic; margin-bottom: 5px; line-height: 1.4; }
+.question-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border-dk); color: var(--text);
+  font-family: var(--font); font-size: 15px; padding: 6px; resize: vertical;
+  min-height: 54px; outline: none; line-height: 1.5;
+}
+.question-input:focus { border-color: var(--blue); }
+.save-answer-btn {
+  margin-top: 5px; background: none; border: 1.5px solid var(--green); color: var(--green);
+  font-family: var(--font); font-size: 15px; font-variant: small-caps;
+  letter-spacing: 0.07em; padding: 3px 10px; cursor: pointer; transition: all 0.12s;
+}
+.save-answer-btn:hover { background: var(--green); color: #fff; }
+.saved-badge { display: none; font-size: 14px; color: var(--green); font-style: italic; margin-left: 7px; }
+.saved-badge.visible { display: inline; }
+
+/* Scrollbars */
+.controls-col::-webkit-scrollbar { width: 5px; }
+.controls-col::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* ── Task pane: single active task ── */
+.tasks-row {
+  border-top: 2px solid var(--border-dk);
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  min-height: 140px; max-height: 200px;
+}
+.task-sidebar {
+  border-right: 2px solid var(--border-dk);
+  background: var(--bg);
+  padding: 9px 11px;
+  display: flex; flex-direction: column; gap: 5px; overflow: hidden;
+}
+.task-sidebar-label {
+  font-size: 12px; font-variant: small-caps; letter-spacing: 0.14em;
+  color: var(--text-muted); margin-bottom: 1px;
+}
+.task-sidebar-desc {
+  font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.45; flex: 1;
+}
+.progress-dots { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.prog-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 1.5px solid var(--border-dk); background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; flex-shrink: 0; transition: all 0.2s;
+}
+.prog-dot.active { border-color: var(--blue); background: var(--blue); }
+.prog-dot.done { border-color: var(--green); background: var(--green); color:#fff; }
+.prog-dot.done::after { content: '✓'; font-size: 8px; }
+/* Tab badge */
+.tab-badge {
+  display: inline-block; font-size: 11px; font-variant: normal;
+  background: var(--border); color: var(--text-dim);
+  border-radius: 8px; padding: 0 5px; margin-left: 5px; vertical-align: middle;
+  transition: all 0.2s; font-family: var(--font); letter-spacing: 0;
+}
+.tab-badge.all-done { background: var(--green); color: #fff; }
+/* Active task card */
+.task-active-col {
+  padding: 9px 14px; display: flex; flex-direction: column; gap: 5px;
+  overflow-y: auto;
+}
+.task-nav-row {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.task-nav-btn {
+  background: none; border: 1px solid var(--border-dk); color: var(--text-muted);
+  font-family: var(--font); font-size: 13px; padding: 1px 7px; cursor: pointer;
+  transition: all 0.12s; line-height: 1.4;
+}
+.task-nav-btn:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+.task-nav-btn:disabled { opacity: 0.28; cursor: default; }
+.task-nav-label {
+  font-size: 15px; font-weight: bold; font-variant: small-caps;
+  letter-spacing: 0.05em; color: var(--black);
+}
+.task-goal-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.task-goal-text {
+  font-size: 13px; color: var(--text-dim); font-style: italic; flex: 1;
+}
+.check-btn {
+  background: none; border: 1.5px solid var(--blue); color: var(--blue);
+  font-family: var(--font); font-size: 13px; font-variant: small-caps;
+  letter-spacing: 0.08em; padding: 2px 9px; cursor: pointer; transition: all 0.12s;
+  white-space: nowrap;
+}
+.check-btn:hover { background: var(--blue); color: #fff; }
+.check-btn.met { border-color: var(--green); color: var(--green); pointer-events: none; }
+.task-feedback { font-size: 12px; font-style: italic; display:none; }
+.task-feedback.visible { display: inline; }
+.task-feedback.ok { color: var(--green); }
+.task-feedback.fail { color: var(--red); }
+.task-question-area { display: flex; flex-direction: column; gap: 3px; }
+.task-question-area.locked { opacity: 0.38; pointer-events: none; }
+.question-prompt { font-size: 13px; color: var(--red); font-style: italic; line-height: 1.35; margin: 0; }
+.question-input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border-dk); color: var(--text);
+  font-family: var(--font); font-size: 13px; padding: 4px 6px; resize: vertical;
+  min-height: 44px; outline: none; line-height: 1.45;
+}
+.question-input:focus { border-color: var(--blue); }
+.task-bottom-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.save-answer-btn {
+  background: none; border: 1.5px solid var(--green); color: var(--green);
+  font-family: var(--font); font-size: 13px; font-variant: small-caps;
+  letter-spacing: 0.07em; padding: 2px 8px; cursor: pointer; transition: all 0.12s;
+}
+.save-answer-btn:hover { background: var(--green); color: #fff; }
+.saved-badge { display: none; font-size: 12px; color: var(--green); font-style: italic; }
+.saved-badge.visible { display: inline; }
+.capture-note { font-size: 11px; color: var(--text-muted); font-style: italic; }
+
+/* Draggable dot cursor on plot */
+.drag-hint { font-size: 12px; color: var(--text-muted); font-style: italic; text-align:center; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div id="page-wrapper">
+
+<!-- HEADER -->
+<div id="site-header">
+  <div class="header-titles">
+    <div class="page-title">Conductor Properties</div>
+    <div class="course-label">PHY 4300: Electricity &amp; Magnetism &mdash; Interactive Activity</div>
+  </div>
+  <button class="dl-btn" onclick="downloadPDF()">&#8659;&nbsp; Download PDF</button>
+</div>
+
+<!-- TAB STRIP -->
+<div class="tab-strip">
+  <button class="tab-btn active"  onclick="switchTab(0)">Electric Fields<span class="tab-badge" id="badge-0">0/2</span></button>
+  <button class="tab-btn"         onclick="switchTab(1)">Potential Field<span class="tab-badge" id="badge-1">0/2</span></button>
+  <button class="tab-btn"         onclick="switchTab(2)">Gauss&#8217; Law<span class="tab-badge" id="badge-2">0/2</span></button>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TAB 0 — ELECTRIC FIELDS
+════════════════════════════════════════ -->
+<div class="tab-pane active" id="tab0">
+  <div class="controls-col">
+    <div class="ctrl-section">
+      <div class="ctrl-label">Parameters</div>
+
+      <!-- Q -->
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">\(Q\) <span style="font-size:15px;font-style:normal;color:var(--text-dim);">nC</span></span>
+          <input type="number" class="slider-num-input" id="ef-Q-num" min="-3" max="3" step="0.1" value="0"
+                 onkeydown="if(event.key==='Enter')efNumChanged('ef-Q','ef-Q-num',-3,3,0.1)"
+                 onblur="efNumChanged('ef-Q','ef-Q-num',-3,3,0.1)">
+        </div>
+        <div class="slider-row">
+          <input type="range" id="ef-Q" min="-3" max="3" step="0.1" value="0">
+          <button class="reset-btn" onclick="efSliderReset('ef-Q','ef-Q-num',0,1)">&#8635;&thinsp;0</button>
+        </div>
+      </div>
+
+      <!-- theta arc slider -->
+      <div class="slider-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;">
+          <span class="slider-name" style="min-width:60px;">\(\theta\) <span style="font-size:15px;font-style:normal;color:var(--text-dim);">rad</span></span>
+          <input type="number" class="slider-num-input" id="ef-pp-num" min="0" max="1.5708" step="0.01" value="0"
+                 style="flex-shrink:0;width:72px;"
+                 onkeydown="if(event.key==='Enter')efPpNumChanged()"
+                 onblur="efPpNumChanged()">
+        </div>
+        <div style="display:flex;flex-direction:row;align-items:flex-start;gap:4px;">
+          <canvas id="ef-arc" width="86" height="86" style="cursor:crosshair;display:block;"></canvas>
+          <div style="font-size:11px;color:var(--text-muted);font-style:italic;line-height:1.6;">
+            ↑ \(\theta=0\) : perp to \(\hat{E}_0\)<br>
+            → \(\theta=\tfrac{\pi}{2}\) : parallel
+          </div>
+        </div>
+        <button class="reset-btn" style="width:100%;margin-top:6px;" onclick="efPpReset()">&#8635;&thinsp;Reset \(\theta=0\)</button>
+      </div>
+
+      <!-- Induced charges toggle -->
+      <div class="toggle-group">
+        <span class="toggle-label">Induced charges</span>
+        <label class="toggle-switch"><input type="checkbox" id="ef-induce"><span class="toggle-track"></span></label>
+      </div>
+      <!-- Show overlay toggle -->
+      <div class="toggle-group">
+        <span class="toggle-label">Show \(e^-/p^+\) overlay</span>
+        <label class="toggle-switch"><input type="checkbox" id="ef-showcharges" checked><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <!-- E0 joystick -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">Applied Field \(\vec{E}_0\)</div>
+      <div class="joystick-wrap">
+        <canvas class="joystick-canvas" id="ef-joystick" width="106" height="106"></canvas>
+        <div class="joystick-caption">Drag &mdash; max \(|\vec{E}_0|=2000\) V/m</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:4px;">
+        <div style="flex:1;"><div style="font-size:13px;color:var(--text-muted);">\(E_{0x}\) V/m</div>
+          <input type="number" class="slider-num-input" id="ef-E0x-num" style="width:100%;text-align:center;"
+                 min="-2000" max="2000" step="10" value="0"
+                 onkeydown="if(event.key==='Enter')efE0NumChanged()" onblur="efE0NumChanged()"></div>
+        <div style="flex:1;"><div style="font-size:13px;color:var(--text-muted);">\(E_{0y}\) V/m</div>
+          <input type="number" class="slider-num-input" id="ef-E0y-num" style="width:100%;text-align:center;"
+                 min="-2000" max="2000" step="10" value="0"
+                 onkeydown="if(event.key==='Enter')efE0NumChanged()" onblur="efE0NumChanged()"></div>
+      </div>
+      <button class="reset-btn" style="width:100%;margin-top:4px;" onclick="efE0Reset()">&#8635;&thinsp;Reset \(\vec{E}_0=(0,0)\)</button>
+    </div>
+
+    <!-- Metrics -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">Live Metrics</div>
+      <div class="metric-line">\(|\vec{E}_0|\): <span class="mval" id="ef-E0mag">&mdash;</span></div>
+      <div class="metric-line">\(\angle\vec{E}_0\): <span class="mval" id="ef-E0ang">&mdash;</span></div>
+      <div class="metric-line">\(|E|_\text{max}\): <span class="mval" id="ef-Emax">&mdash;</span></div>
+      <div class="metric-line">\(Q\): <span class="mval" id="ef-Qval">&mdash;</span></div>
+      <div class="metric-line">\(\theta\): <span class="mval" id="ef-ppval">&mdash;</span></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="ctrl-section" style="border-bottom:none;">
+      <div class="ctrl-label">Legend</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#1B4F8A;border-color:#1B4F8A;"></span>\(\vec{E}\) field arrows</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#B81C1C;border-color:#B81C1C;"></span>Fixed \(p^+\)</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#1A1008;border-color:#9C8C70;"></span>Mobile \(e^-\)</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#1B4F8A;border-color:#1A1008;"></span>Surface \(e^-\) (orbit cw, \(\theta\cdot Q\neq 0\))</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;font-style:italic;">Fill: \(|\vec{E}|\) &ensp;|&ensp; Ring: \(\sigma\) (red−, blue+)</div>
+    </div>
+  </div><!-- /controls-col -->
+
+  <div class="plot-col">
+    <div class="plot-wrap" id="ef-plot-wrap">
+      <div id="plot-ef" style="width:100%;height:100%;"></div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="tasks-row" id="tasks-ef">
+    <div class="task-sidebar">
+      <div class="task-sidebar-label">Instructions</div>
+      <div class="task-sidebar-desc">Express each answer as a <em>modus tollens</em> proof: if&nbsp;\(A\) implies disequilibrium, but the conductor is in equilibrium, then \(A\) is false.</div>
+      <div class="progress-dots" id="ef-prog-dots"></div>
+    </div>
+    <div class="task-active-col" id="ef-task-col">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</div><!-- /tab0 -->
+
+<!-- ═══════════════════════════════════════
+     TAB 1 — POTENTIAL FIELD
+════════════════════════════════════════ -->
+<div class="tab-pane" id="tab1">
+  <div class="controls-col">
+    <div class="ctrl-section">
+      <div class="ctrl-label">Parameters</div>
+      <!-- Q -->
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">\(Q\) <span style="font-size:15px;font-style:normal;color:var(--text-dim);">nC</span></span>
+          <input type="number" class="slider-num-input" id="pf-Q-num" min="-3" max="3" step="0.1" value="1"
+                 onkeydown="if(event.key==='Enter')pfNumChanged('pf-Q','pf-Q-num',-3,3,0.1)"
+                 onblur="pfNumChanged('pf-Q','pf-Q-num',-3,3,0.1)">
+        </div>
+        <div class="slider-row">
+          <input type="range" id="pf-Q" min="-3" max="3" step="0.1" value="1">
+          <button class="reset-btn" onclick="pfSliderReset('pf-Q','pf-Q-num',1,1)">&#8635;&thinsp;1</button>
+        </div>
+      </div>
+      <!-- Mutually exclusive toggles -->
+      <div class="toggle-group">
+        <span class="toggle-label">Lock to surface</span>
+        <label class="toggle-switch"><input type="checkbox" id="pf-locktosurface" onchange="pfToggleMutex('locktosurface')"><span class="toggle-track"></span></label>
+      </div>
+      <div class="toggle-group">
+        <span class="toggle-label">Measure to \(\infty\)</span>
+        <label class="toggle-switch"><input type="checkbox" id="pf-measureatInfinity" onchange="pfToggleMutex('infinity')"><span class="toggle-track"></span></label>
+      </div>
+    </div>
+
+    <!-- ΔV display -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">Potential Difference</div>
+      <div class="metric-big" id="pf-DeltaV">&mdash;</div>
+      <div class="metric-big-label" id="pf-DeltaV-label">\(\Delta V = V_1 - V_2\) (V)</div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">Point Positions</div>
+      <div class="metric-line">\(P_1\): <span class="mval" id="pf-p1pos">&mdash;</span></div>
+      <div class="metric-line">\(V_1\): <span class="mval" id="pf-V1">&mdash;</span></div>
+      <div class="metric-line">\(P_2\): <span class="mval" id="pf-p2pos">&mdash;</span></div>
+      <div class="metric-line">\(V_2\): <span class="mval" id="pf-V2">&mdash;</span></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="ctrl-section" style="border-bottom:none;">
+      <div class="ctrl-label">Legend</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#1B4F8A;border-color:#1B4F8A;"></span>\(\vec{E}\) field arrows</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#C8900A;border-color:#1A1008;"></span>Point \(P_1\) (drag)</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#1A1008;border-color:#9C8C70;"></span>Point \(P_2\) (drag)</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#FAF8F2;border-color:#1A1008;width:11px;height:11px;border-radius:0;"></span>Path \(P_1\to P_2\)</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;font-style:italic;">Fill: \(|\vec{E}|\) &ensp;|&ensp; Blue ring: conductor</div>
+      <div class="drag-hint">Drag \(\circ\) points on the plot</div>
+    </div>
+  </div><!-- /controls-col -->
+
+  <div class="plot-col">
+    <div class="plot-wrap" id="pf-plot-wrap">
+      <div id="plot-pf" style="width:100%;height:100%;"></div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="tasks-row">
+    <div class="task-sidebar">
+      <div class="task-sidebar-label">Instructions</div>
+      <div class="task-sidebar-desc">How is the conductor different from the surrounding space from the perspective of the potential field?</div>
+      <div class="progress-dots" id="pf-prog-dots"></div>
+    </div>
+    <div class="task-active-col" id="pf-task-col"></div>
+  </div>
+</div><!-- /tab1 -->
+
+<!-- ═══════════════════════════════════════
+     TAB 2 — GAUSS' LAW
+════════════════════════════════════════ -->
+<div class="tab-pane" id="tab2">
+  <div class="controls-col">
+    <div class="ctrl-section">
+      <div class="ctrl-label">Parameters</div>
+      <!-- lambda -->
+      <div class="slider-group">
+        <div class="slider-header">
+          <span class="slider-name">\(\lambda\) <span style="font-size:15px;font-style:normal;color:var(--text-dim);">nC/m</span></span>
+          <input type="number" class="slider-num-input" id="gl-lam-num" min="-1" max="1" step="0.05" value="1"
+                 onkeydown="if(event.key==='Enter')glNumChanged('gl-lam','gl-lam-num',-1,1,0.05)"
+                 onblur="glNumChanged('gl-lam','gl-lam-num',-1,1,0.05)">
+        </div>
+        <div class="slider-row">
+          <input type="range" id="gl-lam" min="-1" max="1" step="0.05" value="1">
+          <button class="reset-btn" onclick="glSliderReset('gl-lam','gl-lam-num',1,2)">&#8635;&thinsp;1</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- E0 joystick -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">Applied Field \(\vec{E}_0\)</div>
+      <div class="joystick-wrap">
+        <canvas class="joystick-canvas" id="gl-joystick" width="106" height="106"></canvas>
+        <div class="joystick-caption">Drag &mdash; max \(|\vec{E}_0|=2000\) V/m</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:4px;">
+        <div style="flex:1;"><div style="font-size:13px;color:var(--text-muted);">\(E_{0x}\) V/m</div>
+          <input type="number" class="slider-num-input" id="gl-E0x-num" style="width:100%;text-align:center;"
+                 min="-2000" max="2000" step="10" value="0"
+                 onkeydown="if(event.key==='Enter')glE0NumChanged()" onblur="glE0NumChanged()"></div>
+        <div style="flex:1;"><div style="font-size:13px;color:var(--text-muted);">\(E_{0y}\) V/m</div>
+          <input type="number" class="slider-num-input" id="gl-E0y-num" style="width:100%;text-align:center;"
+                 min="-2000" max="2000" step="10" value="0"
+                 onkeydown="if(event.key==='Enter')glE0NumChanged()" onblur="glE0NumChanged()"></div>
+      </div>
+      <button class="reset-btn" style="width:100%;margin-top:4px;" onclick="glE0Reset()">&#8635;&thinsp;Reset \(\vec{E}_0=(0,0)\)</button>
+    </div>
+
+    <!-- Qin metric -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">Enclosed Charge</div>
+      <div class="metric-big" id="gl-Qin">&mdash;</div>
+      <div class="metric-big-label">\(Q_\text{enc}\) (nC/m)</div>
+      <div class="metric-line" style="margin-top:6px;">Surface center: <span class="mval" id="gl-gspos">&mdash;</span></div>
+      <div class="metric-line">Radius \(r_{gs}\): <span class="mval" id="gl-rgs">&mdash;</span></div>
+    </div>
+
+    <!-- Legend -->
+    <div class="ctrl-section" style="border-bottom:none;">
+      <div class="ctrl-label">Legend</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#1B4F8A;border-color:#1B4F8A;"></span>\(\vec{E}\) field arrows</div>
+      <div class="legend-row"><span class="leg-swatch" style="background:#FAF8F2;border-color:#1A1008;width:11px;height:11px;border-radius:0;"></span>Gaussian surface (drag)</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px;font-style:italic;">Fill: \(|\vec{E}|\) &ensp;|&ensp; Surface: \(\vec{E}\cdot\hat{n}\) (dark red = inward, blue = outward), limits \(\pm|E|_\text{max}\)</div>
+      <div class="drag-hint">Drag center \(\circ\) or radius handle \(\circ\)</div>
+    </div>
+  </div><!-- /controls-col -->
+
+  <div class="plot-col">
+    <div class="plot-wrap" id="gl-plot-wrap">
+      <div id="plot-gl" style="width:100%;height:100%;"></div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="tasks-row">
+    <div class="task-sidebar">
+      <div class="task-sidebar-label">Instructions</div>
+      <div class="task-sidebar-desc">Express each answer as a <em>modus tollens</em> proof about electrostatic equilibrium.</div>
+      <div class="progress-dots" id="gl-prog-dots"></div>
+    </div>
+    <div class="task-active-col" id="gl-task-col"></div>
+  </div>
+</div><!-- /tab2 -->
+
+</div><!-- /page-wrapper -->
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════ -->
+<script>
+'use strict';
+/* ════════════════════════════════════════════
+   SHARED CONSTANTS  (from commonFunctions.py)
+════════════════════════════════════════════ */
+const A      = 5.0;       // conductor radius (cm)
+const winlim = 10.0;
+const eps0   = 8.86e-12;
+const plotCfg = { displayModeBar: false, scrollZoom: false };
+
+/* ── Shared math helpers ── */
+function linspace(a, b, n) {
+  const r = [];
+  for (let i = 0; i < n; i++) r.push(a + (b - a) * i / (n - 1));
+  return r;
+}
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const mag2  = (x, y) => Math.sqrt(x*x + y*y);
+const clampPt = (x, y, lo, hi) => [clamp(x, lo, hi), clamp(y, lo, hi)];
+
+// rhat components at a point
+function rhatXY(x, y) {
+  const r = mag2(x, y);
+  return r > 0 ? [x/r, y/r] : [0, 0];
+}
+
+// Full Efield at a single point (mirrors commonFunctions.Efield)
+// cyl=true uses cylindrical (1/r) rather than spherical (1/r²) scaling
+function EfieldAt(gx, gy, q, induce, E0x, E0y, parperp, cyl) {
+  const r2 = gx*gx + gy*gy;
+  const inside = r2 < A*A;
+  let E = 0;
+  if (!inside) {
+    if (cyl) {
+      E = 9e9 * q / (0.5 * Math.sqrt(r2) * 1e2);
+    } else {
+      E = 9e9 * q / r2;
+    }
+    E *= 1e4; // cm → SI scaling
+  }
+  const [rx, ry] = rhatXY(gx, gy);
+  const cp = Math.cos(parperp), sp = Math.sin(parperp);
+  let ex = E * (cp*rx - sp*ry);
+  let ey = E * (cp*ry + sp*rx);
+  if (induce) {
+    if (!inside) { ex += E0x; ey += E0y; }
+    // interior: leave as zero (no applied field inside)
+  } else {
+    ex += E0x; ey += E0y;
+  }
+  return [ex, ey];
+}
+
+// sigma at angle t on conductor surface
+function sigmaAt(t, q, induce, E0x, E0y) {
+  let s = q / (2*Math.PI*A);
+  if (induce) {
+    s += eps0 * (E0x*Math.cos(t) + E0y*Math.sin(t));
+  }
+  return s * 2*Math.PI*A / 101; // normalised as in Python (len=101)
+}
+
+// potential at a point (scalar, for PotentialProperties)
+function potentialAt(x, y, Q) {
+  const r = mag2(x, y);
+  if (r > A) return 9e9 * Q * 1e-9 / (r * 0.01); // Q in nC, r in cm → m
+  return 9e9 * Q * 1e-9 / (A * 0.01);
+}
+
+/* ── Shared Plotly layout builder ── */
+function makePlotSize(plotId) {
+  const wrap = document.getElementById(plotId).parentElement;
+  const sz = Math.round(wrap.getBoundingClientRect().width) || 500;
+  return sz;
+}
+
+function makeBaseLayout(plotId) {
+  const sz = makePlotSize(plotId);
+  return {
+    width: sz, height: sz,
+    paper_bgcolor:'#FAF8F2', plot_bgcolor:'#FAF8F2',
+    font:{ family:"'Baskerville Old Face',Baskerville,Georgia,serif", size:13, color:'#5C4F38' },
+    xaxis:{
+      title:{text:'x (cm)',standoff:5,font:{size:14}},
+      range:[-winlim,winlim], gridcolor:'#DDD5C0',
+      zerolinecolor:'#8B7D5E', zerolinewidth:1.5,
+      color:'#5C4F38', fixedrange:true, autorange:false, dtick:2,
+      scaleanchor:'y', scaleratio:1, constrain:'domain'
+    },
+    yaxis:{
+      title:{text:'y (cm)',standoff:5,font:{size:14}},
+      range:[-winlim,winlim], gridcolor:'#DDD5C0',
+      zerolinecolor:'#8B7D5E', zerolinewidth:1.5,
+      color:'#5C4F38', fixedrange:true, autorange:false, dtick:2,
+      constrain:'domain'
+    },
+    margin:{l:50,r:62,t:12,b:44},
+    showlegend:false, dragmode:false,
+    coloraxis:{
+      colorscale:[[0,'#FFFFFF'],[1,'#1B4F8A']], showscale:true,
+      cmin:0, cmax:1e4,
+      colorbar:{title:{text:'|E| (V/m)',font:{size:12}},thickness:10,len:0.75,x:1.01}
+    }
+  };
+}
+
+/* ── Common heatmap + quiver builder ── */
+const Nf = 61, Nq = 21;
+const xfine = linspace(-winlim, winlim, Nf);
+const xqlist = linspace(-winlim, winlim, Nq);
+const arrowLen = (2*winlim/(Nq-1)) * 0.52;
+
+function buildHeatmapQuiver(E0x, E0y, q, induce, parperp, cyl) {
+  // Heatmap
+  const Emag_z = [];
+  let maxE = 0;
+  for (let j = 0; j < Nf; j++) {
+    const row = [];
+    for (let i = 0; i < Nf; i++) {
+      const [ex,ey] = EfieldAt(xfine[i], xfine[j], q, induce, E0x, E0y, parperp, cyl);
+      const m = mag2(ex, ey);
+      if (m > maxE) maxE = m;
+      row.push(m);
+    }
+    Emag_z.push(row);
+  }
+  // Quiver
+  const qxs=[], qys=[];
+  for (let j=0; j<Nq; j++) {
+    for (let i=0; i<Nq; i++) {
+      const gx=xqlist[i], gy=xqlist[j];
+      const [ex,ey] = EfieldAt(gx, gy, q, induce, E0x, E0y, parperp, cyl);
+      const m = mag2(ex,ey);
+      if (m===0) continue;
+      const sc = arrowLen/m;
+      qxs.push(gx, gx+ex*sc, null);
+      qys.push(gy, gy+ey*sc, null);
+    }
+  }
+  return { Emag_z, maxE, qxs, qys };
+}
+
+function sigmaRing(q, induce, E0x, E0y) {
+  const NcL=180;
+  const tlist = linspace(0, 2*Math.PI, NcL);
+  const e0m = mag2(E0x,E0y);
+  const ehatx = e0m>0 ? E0x/e0m : 1, ehaty = e0m>0 ? E0y/e0m : 0;
+  const sig = tlist.map(t => {
+    let s = q/(2*Math.PI*A);
+    if (induce && e0m>0) s += (ehatx*Math.cos(t)+ehaty*Math.sin(t))*8.85e-12;
+    return s;
+  });
+  const sMin=Math.min(...sig), sMax=Math.max(...sig);
+  const sRng=Math.max(sMax-sMin,1e-30);
+  const sigNorm=sig.map(s=>((s-(sMin+sMax)/2)/sRng)*2);
+  return {
+    x: tlist.map(t=>A*Math.cos(t)),
+    y: tlist.map(t=>A*Math.sin(t)),
+    color: sigNorm
+  };
+}
+
+/* ── Shared heatmap + quiver traces ── */
+function heatmapTrace(d) {
+  return { type:'heatmap', x:xfine, y:xfine, z:d.Emag_z,
+    coloraxis:'coloraxis', hoverinfo:'skip', zsmooth:'fast', zmin:0, zmax:1e4 };
+}
+function quiverTrace(d) {
+  return { x:d.qxs, y:d.qys, mode:'lines',
+    line:{color:'#1B4F8A',width:0.9}, hoverinfo:'skip' };
+}
+function sigmaTrace(s) {
+  return { x:s.x, y:s.y, mode:'markers',
+    marker:{color:s.color, colorscale:[[0,'#B81C1C'],[0.5,'#FAF8F2'],[1,'#1B4F8A']],
+      size:7, line:{width:0}, cmin:-1, cmax:1, showscale:false},
+    hovertemplate:'σ: %{marker.color:.3f}<extra></extra>' };
+}
+function conductorBoundaryTrace(color, dash, width) {
+  const cT = linspace(0,2*Math.PI,120);
+  return { x:cT.map(t=>A*Math.cos(t)), y:cT.map(t=>A*Math.sin(t)), mode:'lines',
+    line:{color:color||'rgba(26,16,8,0.25)',width:width||1,dash:dash||'dot'}, hoverinfo:'skip' };
+}
+
+/* ── Shared control helpers ── */
+function syncSlider(sliderId, numId, dec) {
+  document.getElementById(numId).value = parseFloat(document.getElementById(sliderId).value).toFixed(dec);
+}
+function genericNumChanged(sliderId, numId, lo, hi, step, cb) {
+  const el = document.getElementById(numId), sel = document.getElementById(sliderId);
+  const raw = parseFloat(el.value);
+  if (isNaN(raw)) { el.classList.add('invalid'); return; }
+  const val = clamp(raw, lo, hi);
+  el.classList.remove('invalid');
+  el.value = val; sel.value = val;
+  cb();
+}
+function genericSliderReset(sliderId, numId, def, dec, cb) {
+  document.getElementById(sliderId).value = def;
+  document.getElementById(numId).value = parseFloat(def).toFixed(dec);
+  cb();
+}
+
+/* ── Joystick shared ── */
+const JR=46, JC=53;
+let efJoyDrag=false, glJoyDrag=false;
+
+function drawJoystick(canvasId, E0x, E0y) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.beginPath(); ctx.arc(JC,JC,JR,0,2*Math.PI);
+  ctx.strokeStyle='#8B7D5E'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(JC-JR,JC); ctx.lineTo(JC+JR,JC);
+  ctx.moveTo(JC,JC-JR); ctx.lineTo(JC,JC+JR);
+  ctx.strokeStyle='#C8BFA0'; ctx.lineWidth=1; ctx.stroke();
+  const e0m = mag2(E0x,E0y);
+  const frac = Math.min(e0m/2000,1);
+  const ang = Math.atan2(E0y,E0x);
+  const hdx=Math.cos(ang)*frac*JR, hdy=-Math.sin(ang)*frac*JR;
+  ctx.beginPath(); ctx.arc(JC+hdx,JC+hdy,7,0,2*Math.PI);
+  ctx.fillStyle='#1B4F8A'; ctx.fill();
+  ctx.strokeStyle='#1A1008'; ctx.lineWidth=1.5; ctx.stroke();
+}
+function joystickValFromPos(mx,my) {
+  let dx=mx-JC, dy=-(my-JC);
+  const r=Math.sqrt(dx*dx+dy*dy);
+  if (r>JR){dx=dx/r*JR;dy=dy/r*JR;}
+  return [dx/JR*2000, dy/JR*2000];
+}
+
+/* ── Task helpers (legacy stubs — replaced by task engine below) ── */
+function saveAnswer(key) {
+  const badge=document.getElementById(key+'-saved');
+  if(badge){badge.classList.add('visible');setTimeout(()=>badge.classList.remove('visible'),2200);}
+}
+
+/* ════════════════════════════════════════════
+   TAB 0: ELECTRIC FIELDS
+════════════════════════════════════════════ */
+const efSt = { Q:0, E0x:0, E0y:0, parperp:0, induce:false, showCharges:true };
+
+/* Arc slider */
+const AR=34, AC_ARC=80;
+let efArcDrag=false;
+
+function efDrawArc() {
+  const canvas=document.getElementById('ef-arc'); if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const cx=AC_ARC-50, cy=AC_ARC-8;
+  ctx.beginPath(); ctx.arc(cx,cy,AR,-Math.PI/2,0);
+  ctx.strokeStyle='#C8BFA0'; ctx.lineWidth=3; ctx.stroke();
+  ctx.font='10px serif'; ctx.fillStyle='#9C8C70'; ctx.textAlign='center';
+  ctx.fillText('⊥',cx,cy-AR-15);
+  ctx.fillText('∥',cx+AR+15,cy+3);
+  ctx.beginPath();
+  ctx.moveTo(cx,cy); ctx.lineTo(cx,cy-AR-2);
+  ctx.moveTo(cx,cy); ctx.lineTo(cx+AR+2,cy);
+  ctx.strokeStyle='#DDD5C0'; ctx.lineWidth=1; ctx.stroke();
+  const ca=Math.PI/2-efSt.parperp;
+  const hx=cx+AR*Math.cos(ca), hy=cy-AR*Math.sin(ca);
+  ctx.beginPath(); ctx.arc(hx,hy,7,0,2*Math.PI);
+  ctx.fillStyle='#1B4F8A'; ctx.fill();
+  ctx.strokeStyle='#1A1008'; ctx.lineWidth=1.5; ctx.stroke();
+}
+function efArcFromPos(mx,my) {
+  const cx=AC_ARC-8, cy=AC_ARC-8;
+  const dx=mx-cx, dy=-(my-cy);
+  let angle=Math.atan2(dy,dx);
+  angle=clamp(angle,0,Math.PI/2);
+  efSt.parperp=Math.PI/2-angle;
+  document.getElementById('ef-pp-num').value=efSt.parperp.toFixed(2);
+  efUpdate();
+}
+function efPpNumChanged() {
+  const raw=parseFloat(document.getElementById('ef-pp-num').value);
+  if(isNaN(raw))return;
+  efSt.parperp=clamp(raw,0,Math.PI/2);
+  document.getElementById('ef-pp-num').value=efSt.parperp.toFixed(2);
+  efUpdate();
+}
+function efPpReset() { efSt.parperp=0; document.getElementById('ef-pp-num').value='0.00'; efUpdate(); }
+
+function efNumChanged(s,n,lo,hi,st_) { genericNumChanged(s,n,lo,hi,st_,efUpdate); }
+function efSliderReset(s,n,d,dec) { genericSliderReset(s,n,d,dec,efUpdate); }
+function efE0NumChanged() {
+  efSt.E0x=clamp(parseFloat(document.getElementById('ef-E0x-num').value)||0,-2000,2000);
+  efSt.E0y=clamp(parseFloat(document.getElementById('ef-E0y-num').value)||0,-2000,2000);
+  document.getElementById('ef-E0x-num').value=efSt.E0x.toFixed(0);
+  document.getElementById('ef-E0y-num').value=efSt.E0y.toFixed(0);
+  efUpdate();
+}
+function efE0Reset() { efSt.E0x=0;efSt.E0y=0; document.getElementById('ef-E0x-num').value='0'; document.getElementById('ef-E0y-num').value='0'; efUpdate(); }
+
+function efBuildTraces() {
+  const {Q,E0x,E0y,parperp,induce} = efSt;
+  const q = Q*1e-9;
+  const d = buildHeatmapQuiver(E0x,E0y,q,induce,parperp,false);
+  const s = sigmaRing(q,induce,E0x,E0y);
+  const traces = [heatmapTrace(d), quiverTrace(d), sigmaTrace(s)];
+  // Conditional applied/induced field arrows
+  const e0m=mag2(E0x,E0y);
+  if(induce && e0m>0){
+    const ex=E0x/e0m, ey=E0y/e0m;
+    traces.push({x:[-ey/(2)],y:[ex/(2)],mode:'markers+text',
+      marker:{symbol:'arrow',size:14,color:'#1B4F8A',angleref:'previous',
+        line:{color:'#1B4F8A',width:2}},
+      hoverinfo:'skip',name:'Applied'});
+    traces.push({x:[ey/(2)],y:[-ex/(2)],mode:'markers+text',
+      marker:{symbol:'arrow',size:14,color:'#C8900A',angleref:'previous',
+        line:{color:'#C8900A',width:2}},
+      hoverinfo:'skip',name:'Induced'});
+  }
+  return {traces: [...traces, ...efChargeTraces()], maxE:d.maxE};
+}
+
+function efUpdate() {
+  efSt.Q        = +document.getElementById('ef-Q').value;
+  efSt.induce   = document.getElementById('ef-induce').checked;
+  efSt.showCharges = document.getElementById('ef-showcharges').checked;
+  efSt.E0x      = parseFloat(document.getElementById('ef-E0x-num').value)||0;
+  efSt.E0y      = parseFloat(document.getElementById('ef-E0y-num').value)||0;
+  document.getElementById('ef-Q-num').value  = efSt.Q.toFixed(1);
+  document.getElementById('ef-pp-num').value = efSt.parperp.toFixed(2);
+  const {traces,maxE} = efBuildTraces();
+  Plotly.react('plot-ef', traces, makeBaseLayout('plot-ef'), plotCfg);
+  // Metrics
+  const e0m=mag2(efSt.E0x,efSt.E0y);
+  document.getElementById('ef-E0mag').textContent=e0m.toFixed(0)+' V/m';
+  document.getElementById('ef-E0ang').textContent=(Math.atan2(efSt.E0y,efSt.E0x)*180/Math.PI).toFixed(1)+'°';
+  document.getElementById('ef-Emax').textContent=maxE.toFixed(0)+' V/m';
+  document.getElementById('ef-Qval').textContent=efSt.Q.toFixed(1)+' nC';
+  document.getElementById('ef-ppval').textContent=efSt.parperp.toFixed(2)+' rad';
+  drawJoystick('ef-joystick',efSt.E0x,efSt.E0y);
+  efDrawArc();
+}
+
+/* ── EF Particle animation (Plotly-native) ── */
+const EF_GRID=2.0, EF_SPEED=0.030, EF_SURF_SPEED=0.015;
+
+const POS_LO=-winlim+EF_GRID/2, POS_HI=winlim-EF_GRID/2;
+const efAllCharges=[];
+for(let gx=POS_LO;gx<=POS_HI+1e-9;gx+=EF_GRID)
+  for(let gy=POS_LO;gy<=POS_HI+1e-9;gy+=EF_GRID)
+    efAllCharges.push([gx,gy]);
+
+// Static positive charges — positions never change, filtered to inside conductor at draw time
+const efPosX = efAllCharges.filter(([x,y])=>mag2(x,y)<A).map(([x])=>x);
+const efPosY = efAllCharges.filter(([x,y])=>mag2(x,y)<A).map(([,y])=>y);
+
+// Electrons: one per grid point, offset within cell
+const efElectrons = efAllCharges.map(([px,py])=>({x:px+EF_GRID*0.3, y:py+EF_GRID*0.3}));
+
+// Surface charges
+const NS=16;
+const efSurfCharges = Array.from({length:NS},(_,i)=>({angle:2*Math.PI*i/NS}));
+
+let efLastTS=null;
+// Trace indices in the plot: heatmap=0, quiver=1, sigmaRing=2, (cond arrows 3,4 optional), then charges
+// We always append 3 charge traces at the END: posCharges, electrons, surfCharges
+// Their indices are tracked here so restyle hits the right ones.
+const EF_TRACE_POS=0, EF_TRACE_EL=1, EF_TRACE_SURF=2; // offsets from charge block start
+let efChargeTraceBase = 0; // set after first full plot
+
+function efChargeTraces() {
+  // Positive charges (red ⊕) — static x,y, inside conductor only
+  const tPos = {
+    x: efPosX, y: efPosY, mode:'markers',
+    marker:{symbol:'circle', size:9, color:'#B81C1C',
+      line:{color:'#FAF8F2',width:1.2}},
+    hoverinfo:'skip', name:'p+'
+  };
+  // Electrons (dark ⊖) — positions updated by animation
+  const visEl = efElectrons.filter(e=>mag2(e.x,e.y)<A);
+  const tEl = {
+    x: visEl.map(e=>e.x), y: visEl.map(e=>e.y), mode:'markers',
+    marker:{symbol:'circle', size:7, color:'#1A1008',
+      line:{color:'#C8BFA0',width:0.8}},
+    hoverinfo:'skip', name:'e-'
+  };
+  // Surface charges (blue ⊖)
+  const surfVis = (Math.abs(efSt.parperp)>0.001);
+  const surfX = surfVis ? efSurfCharges.map(sc=>(A+0.4)*Math.cos(sc.angle)) : [];
+  const surfY = surfVis ? efSurfCharges.map(sc=>(A+0.4)*Math.sin(sc.angle)) : [];
+  const tSurf = {
+    x: surfX, y: surfY, mode:'markers',
+    marker:{symbol:'circle', size:8, color:'#1B4F8A',
+      line:{color:'#FAF8F2',width:0.8}},
+    hoverinfo:'skip', name:'surf-'
+  };
+  return [tPos, tEl, tSurf];
+}
+
+function wrapPeriodic(v,lo,hi){const s=hi-lo;while(v>hi)v-=s;while(v<lo)v+=s;return v;}
+
+function efAnimCharges(ts) {
+  requestAnimationFrame(efAnimCharges);
+  const plotEl = document.getElementById('plot-ef');
+  if(!plotEl || !plotEl.data || plotEl.data.length===0){efLastTS=ts;return;}
+
+  const dt = efLastTS ? Math.min((ts-efLastTS)/16.67, 3) : 1;
+  efLastTS = ts;
+
+  if(!efSt.showCharges){
+    // hide all charge traces by setting empty arrays
+    const n = plotEl.data.length;
+    if(n>=3) Plotly.restyle('plot-ef',{x:[[],[],[]],y:[[],[],[]]},
+      [n-3, n-2, n-1]);
+    return;
+  }
+
+  const e0m = mag2(efSt.E0x, efSt.E0y);
+  if(e0m>0 && !efSt.induce){
+    const ddx=-efSt.E0x/e0m*EF_SPEED*dt, ddy=-efSt.E0y/e0m*EF_SPEED*dt;
+    efElectrons.forEach(e=>{
+      e.x=wrapPeriodic(e.x+ddx,-winlim,winlim);
+      e.y=wrapPeriodic(e.y+ddy,-winlim,winlim);
+    });
+  }
+
+  const surfSpeed = efSt.parperp * Math.abs(efSt.Q) * EF_SURF_SPEED * dt;
+  if(surfSpeed>0) efSurfCharges.forEach(sc=>{ sc.angle -= surfSpeed; });
+
+  const visEl = efElectrons.filter(e=>mag2(e.x,e.y)<A);
+  const surfVis = Math.abs(efSt.parperp)>0.001;
+  const surfX = surfVis ? efSurfCharges.map(sc=>(A+0.4)*Math.cos(sc.angle)) : [];
+  const surfY = surfVis ? efSurfCharges.map(sc=>(A+0.4)*Math.sin(sc.angle)) : [];
+
+  const n = plotEl.data.length;
+  if(n>=3){
+    Plotly.restyle('plot-ef',
+      { x: [efPosX, visEl.map(e=>e.x), surfX],
+        y: [efPosY, visEl.map(e=>e.y), surfY] },
+      [n-3, n-2, n-1]);
+  }
+}
+
+/* ════════════════════════════════════════════
+   TAB 1: POTENTIAL FIELD
+════════════════════════════════════════════ */
+const pfSt = { Q:1, x1:-6, y1:-6, x2:7, y2:7, locktosurface:false, measureatInfinity:false };
+let pfDragging = null; // 'p1' | 'p2' | null
+
+function pfToggleMutex(which) {
+  const lts=document.getElementById('pf-locktosurface');
+  const mai=document.getElementById('pf-measureatInfinity');
+  if(which==='locktosurface'&&lts.checked){ mai.disabled=true; mai.checked=false; }
+  else if(which==='locktosurface'&&!lts.checked){ mai.disabled=false; }
+  if(which==='infinity'&&mai.checked){ lts.disabled=true; lts.checked=false; }
+  else if(which==='infinity'&&!mai.checked){ lts.disabled=false; }
+  pfUpdate();
+}
+
+function pfNumChanged(s,n,lo,hi,st_){ genericNumChanged(s,n,lo,hi,st_,pfUpdate); }
+function pfSliderReset(s,n,d,dec){ genericSliderReset(s,n,d,dec,pfUpdate); }
+
+function pfComputePoints() {
+  let {Q,x1,y1,x2,y2,locktosurface,measureatInfinity} = pfSt;
+  if(locktosurface){
+    const r1=mag2(x1,y1)||1e-9, r2=mag2(x2,y2)||1e-9;
+    x1=A*x1/r1; y1=A*y1/r1; x2=A*x2/r2; y2=A*y2/r2;
+  }
+  if(measureatInfinity){
+    const rm=mag2(x1,y1)||1e-9;
+    x2=x1/rm*2*winlim; y2=y1/rm*2*winlim;
+  }
+  return {x1,y1,x2,y2};
+}
+
+function pfBuildTraces() {
+  const {Q,locktosurface,measureatInfinity} = pfSt;
+  const q=Q*1e-9;
+  const d = buildHeatmapQuiver(0,0,q,true,0,0,false);
+  const {x1,y1,x2,y2} = pfComputePoints();
+
+  // Path line
+  let pathX,pathY;
+  if(locktosurface){
+    const t1=Math.atan2(y1,x1), t2=Math.atan2(y2,x2);
+    let tmin=Math.min(t1,t2),tmax=Math.max(t1,t2);
+    const tpath=linspace(tmin,tmax,60);
+    pathX=tpath.map(t=>A*Math.cos(t)); pathY=tpath.map(t=>A*Math.sin(t));
+  } else {
+    pathX=[x1,x2]; pathY=[y1,y2];
+  }
+
+  const traces = [
+    heatmapTrace(d),
+    quiverTrace(d),
+    conductorBoundaryTrace('#1B4F8A','solid',3),
+    // path
+    { x:pathX,y:pathY,mode:'lines',line:{color:'#FAF8F2',width:2,dash:'dot'},hoverinfo:'skip'},
+    // P1 draggable (C1 = orange)
+    { x:[x1],y:[y1],mode:'markers',
+      marker:{size:12,color:'#C8900A',line:{color:'#1A1008',width:1.5}},
+      hovertemplate:'P₁ (%{x:.1f}, %{y:.1f})<extra></extra>'},
+    // P2 draggable (black)
+    { x:[x2],y:[y2],mode:'markers',
+      marker:{size:12,color:measureatInfinity?'rgba(26,16,8,0.3)':'#1A1008',line:{color:'#FAF8F2',width:1.5}},
+      hovertemplate:'P₂ (%{x:.1f}, %{y:.1f})<extra></extra>'}
+  ];
+  return {traces, x1, y1, x2, y2, d};
+}
+
+function pfUpdate() {
+  pfSt.Q               = +document.getElementById('pf-Q').value;
+  pfSt.locktosurface   = document.getElementById('pf-locktosurface').checked;
+  pfSt.measureatInfinity = document.getElementById('pf-measureatInfinity').checked;
+  document.getElementById('pf-Q-num').value = pfSt.Q.toFixed(1);
+
+  const {traces,x1,y1,x2,y2} = pfBuildTraces();
+  Plotly.react('plot-pf', traces, makeBaseLayout('plot-pf'), plotCfg);
+
+  // Compute ΔV
+  const Q=pfSt.Q;
+  const V1=potentialAt(x1,y1,Q), V2=pfSt.measureatInfinity?0:potentialAt(x2,y2,Q);
+  const DV=V1-V2;
+  document.getElementById('pf-DeltaV').textContent=DV.toFixed(1)+' V';
+  document.getElementById('pf-DeltaV-label').innerHTML=pfSt.measureatInfinity?'\\(V_1 - V(\\infty)\\) (V)':'\\(\\Delta V = V_1 - V_2\\) (V)';
+  document.getElementById('pf-p1pos').textContent='('+x1.toFixed(1)+', '+y1.toFixed(1)+') cm';
+  document.getElementById('pf-V1').textContent=V1.toFixed(1)+' V';
+  document.getElementById('pf-p2pos').textContent=pfSt.measureatInfinity?'∞':'('+x2.toFixed(1)+', '+y2.toFixed(1)+') cm';
+  document.getElementById('pf-V2').textContent=pfSt.measureatInfinity?'0 V':V2.toFixed(1)+' V';
+  if(window.MathJax) MathJax.typesetPromise([document.getElementById('pf-DeltaV-label')]).catch(()=>{});
+}
+
+// Task checks for PotentialProperties
+// Drag on PF plot
+function pfInitDrag() {
+  const plotEl = document.getElementById('plot-pf');
+  plotEl.addEventListener('mousedown', e => {
+    const fl = plotEl._fullLayout; if(!fl) return;
+    const rect = plotEl.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const [dx,dy] = canvasToPfData(fl,mx,my);
+    const {x1,y1,x2,y2} = pfComputePoints();
+    if(pfSt.measureatInfinity){
+      if(mag2(dx-x1,dy-y1)<1.5){pfDragging='p1';}
+    } else {
+      const d1=mag2(dx-x1,dy-y1), d2=mag2(dx-x2,dy-y2);
+      if(d1<d2&&d1<1.5)pfDragging='p1';
+      else if(d2<1.5)pfDragging='p2';
+    }
+  });
+  document.addEventListener('mousemove', e => {
+    if(!pfDragging) return;
+    const fl = document.getElementById('plot-pf')._fullLayout; if(!fl)return;
+    const rect = document.getElementById('plot-pf').getBoundingClientRect();
+    const [dx,dy] = canvasToPfData(fl, e.clientX-rect.left, e.clientY-rect.top);
+    const cx=clamp(dx,-winlim,winlim), cy=clamp(dy,-winlim,winlim);
+    if(pfDragging==='p1'){pfSt.x1=cx;pfSt.y1=cy;}
+    else{pfSt.x2=cx;pfSt.y2=cy;}
+    pfUpdate();
+  });
+  document.addEventListener('mouseup',()=>{pfDragging=null;});
+}
+function canvasToPfData(fl,px,py) {
+  const xa=fl.xaxis,ya=fl.yaxis;
+  const ml=fl.margin.l,mt=fl.margin.t;
+  const pw=fl.width-fl.margin.l-fl.margin.r, ph=fl.height-fl.margin.t-fl.margin.b;
+  const [xmin,xmax]=xa.range,[ymin,ymax]=ya.range;
+  const dx=xmin+(px-ml)/(pw)*(xmax-xmin);
+  const dy=ymax-(py-mt)/(ph)*(ymax-ymin);
+  return [dx,dy];
+}
+
+/* ════════════════════════════════════════════
+   TAB 2: GAUSS' LAW
+════════════════════════════════════════════ */
+const glSt = { lambd:1, E0x:0, E0y:0, xgs:0, ygs:0, rgs:2, tgs:0 };
+let glDragging = null; // 'center'|'radius'|null
+
+function glNumChanged(s,n,lo,hi,st_){ genericNumChanged(s,n,lo,hi,st_,glUpdate); }
+function glSliderReset(s,n,d,dec){ genericSliderReset(s,n,d,dec,glUpdate); }
+function glE0NumChanged() {
+  glSt.E0x=clamp(parseFloat(document.getElementById('gl-E0x-num').value)||0,-2000,2000);
+  glSt.E0y=clamp(parseFloat(document.getElementById('gl-E0y-num').value)||0,-2000,2000);
+  document.getElementById('gl-E0x-num').value=glSt.E0x.toFixed(0);
+  document.getElementById('gl-E0y-num').value=glSt.E0y.toFixed(0);
+  glUpdate();
+}
+function glE0Reset() { glSt.E0x=0;glSt.E0y=0; document.getElementById('gl-E0x-num').value='0'; document.getElementById('gl-E0y-num').value='0'; glUpdate(); }
+
+function glFluxOnSurface() {
+  // Compute E·n̂ around the Gaussian surface
+  const {lambd,E0x,E0y,xgs,ygs,rgs} = glSt;
+  const q=lambd*1e-9;
+  const Nt=101;
+  const tlist=linspace(0,2*Math.PI,Nt);
+  const flux=tlist.map(t=>{
+    const sx=rgs*Math.cos(t)+xgs, sy=rgs*Math.sin(t)+ygs;
+    const [ex,ey]=EfieldAt(sx,sy,q,true,E0x,E0y,0,true);
+    return ex*Math.cos(t)+ey*Math.sin(t);
+  });
+  const Qin=flux.reduce((a,b)=>a+b,0)/Nt*eps0*2*Math.PI*rgs*1e-2;
+  return {tlist,flux,Qin};
+}
+
+function glBuildTraces() {
+  const {lambd,E0x,E0y,xgs,ygs,rgs,tgs} = glSt;
+  const q=lambd*1e-9;
+  const d = buildHeatmapQuiver(E0x,E0y,q,true,0,0,true);
+  const sig = sigmaRing(q,true,E0x,E0y);
+  const {tlist,flux,Qin} = glFluxOnSurface();
+
+  const Emax = Math.max(d.maxE, 1);
+  const gsX=tlist.map(t=>rgs*Math.cos(t)+xgs);
+  const gsY=tlist.map(t=>rgs*Math.sin(t)+ygs);
+  const rhX=rgs*Math.cos(tgs)+xgs, rhY=rgs*Math.sin(tgs)+ygs;
+
+  const traces = [
+    heatmapTrace(d),
+    quiverTrace(d),
+    conductorBoundaryTrace(),
+    sigmaTrace(sig),
+    // Gaussian surface ring — same pattern as sigmaTrace: direct marker colorscale
+    { x:gsX, y:gsY, mode:'markers', type:'scatter',
+      marker:{
+        color: flux,
+        colorscale: [[0,'#8B1A1A'],[0.5,'#FAF8F2'],[1,'#1B4F8A']],
+        size:8, line:{width:0},
+        cmin: -Emax, cmax: Emax,
+        showscale: false
+      },
+      hovertemplate:'E·n̂: %{marker.color:.1f} V/m<extra></extra>'},
+    // Center drag handle
+    { x:[xgs],y:[ygs],mode:'markers',
+      marker:{size:10,color:'#FAF8F2',line:{color:'#1A1008',width:2}},
+      hovertemplate:'Center (%{x:.1f},%{y:.1f})<extra></extra>'},
+    // Radius drag handle
+    { x:[rhX],y:[rhY],mode:'markers',
+      marker:{size:10,color:'#FAF8F2',line:{color:'#C8900A',width:2}},
+      hovertemplate:'Radius handle<extra></extra>'}
+  ];
+
+  return {traces, Qin};
+}
+
+function glUpdate() {
+  glSt.lambd = +document.getElementById('gl-lam').value;
+  glSt.E0x   = parseFloat(document.getElementById('gl-E0x-num').value)||0;
+  glSt.E0y   = parseFloat(document.getElementById('gl-E0y-num').value)||0;
+  document.getElementById('gl-lam-num').value = glSt.lambd.toFixed(2);
+
+  const {traces, Qin} = glBuildTraces();
+  Plotly.react('plot-gl', traces, makeBaseLayout('plot-gl'), plotCfg);
+
+  document.getElementById('gl-Qin').textContent=(Qin*1e9).toFixed(3)+' nC/m';
+  document.getElementById('gl-gspos').textContent='('+glSt.xgs.toFixed(1)+','+glSt.ygs.toFixed(1)+') cm';
+  document.getElementById('gl-rgs').textContent=glSt.rgs.toFixed(2)+' cm';
+  drawJoystick('gl-joystick',glSt.E0x,glSt.E0y);
+}
+
+// Task checks for GaussLaw — removed (handled by task engine)
+
+// Drag on GL plot
+function glInitDrag() {
+  const plotEl=document.getElementById('plot-gl');
+  plotEl.addEventListener('mousedown', e => {
+    const fl=plotEl._fullLayout; if(!fl)return;
+    const rect=plotEl.getBoundingClientRect();
+    const [dx,dy]=canvasToGlData(fl,e.clientX-rect.left,e.clientY-rect.top);
+    const rhX=glSt.rgs*Math.cos(glSt.tgs)+glSt.xgs;
+    const rhY=glSt.rgs*Math.sin(glSt.tgs)+glSt.ygs;
+    const dc=mag2(dx-glSt.xgs,dy-glSt.ygs);
+    const dr=mag2(dx-rhX,dy-rhY);
+    if(dr<1.5&&dr<dc) glDragging='radius';
+    else if(dc<1.5) glDragging='center';
+  });
+  document.addEventListener('mousemove', e => {
+    if(!glDragging)return;
+    const fl=document.getElementById('plot-gl')._fullLayout; if(!fl)return;
+    const rect=document.getElementById('plot-gl').getBoundingClientRect();
+    const [dx,dy]=canvasToGlData(fl,e.clientX-rect.left,e.clientY-rect.top);
+    if(glDragging==='center'){
+      glSt.xgs=clamp(dx,-winlim,winlim);
+      glSt.ygs=clamp(dy,-winlim,winlim);
+    } else if(glDragging==='radius'){
+      const rel_x=dx-glSt.xgs, rel_y=dy-glSt.ygs;
+      glSt.rgs=Math.max(0.3, Math.min(mag2(rel_x,rel_y),winlim));
+      glSt.tgs=Math.atan2(rel_y,rel_x);
+    }
+    glUpdate();
+  });
+  document.addEventListener('mouseup',()=>{glDragging=null;});
+}
+function canvasToGlData(fl,px,py) {
+  const xa=fl.xaxis,ya=fl.yaxis;
+  const ml=fl.margin.l,mt=fl.margin.t;
+  const pw=fl.width-fl.margin.l-fl.margin.r, ph=fl.height-fl.margin.t-fl.margin.b;
+  const [xmin,xmax]=xa.range,[ymin,ymax]=ya.range;
+  return [xmin+(px-ml)/pw*(xmax-xmin), ymax-(py-mt)/ph*(ymax-ymin)];
+}
+
+/* ════════════════════════════════════════════
+   UNIFIED TASK ENGINE
+════════════════════════════════════════════ */
+const TABS = [
+  {
+    key:'ef', colId:'ef-task-col', dotsId:'ef-prog-dots', badgeId:'badge-0',
+    plotId:'plot-ef',
+    tasks:[
+      { id:'ef-t1', title:'Question 1',
+        condition:()=> mag2(efSt.E0x,efSt.E0y)>0,
+        prompt:'Apply a bulk field.',
+        question:'What must be true of the electric field in the bulk of a conductor in electrostatic equilibrium and why?' },
+      { id:'ef-t2', title:'Question 2',
+        condition:()=> (efSt.Q>0)&&(efSt.parperp>0),
+        prompt:'Change the surface field.',
+        question:'What must be true of the electric field at the surface of a conductor in electrostatic equilibrium and why?' }
+    ]
+  },
+  {
+    key:'pf', colId:'pf-task-col', dotsId:'pf-prog-dots', badgeId:'badge-1',
+    plotId:'plot-pf', overlayId:null,
+    tasks:[
+      { id:'pf-t1', title:'Question 1',
+        condition:()=>{ const {x1,y1,x2,y2}=pfComputePoints(); return (mag2(x1,y1)<A)&&(pfSt.measureatInfinity||mag2(x2,y2)<A); },
+        prompt:'Try measuring the potential inside the conductor.',
+        question:'What must be true about the potential field inside a conductor? Why?' },
+      { id:'pf-t2', title:'Question 2',
+        condition:()=> pfSt.locktosurface,
+        prompt:'Try measuring the potential difference of surface paths.',
+        question:'How is the potential field at the surface of a conductor related to the value inside? Why?' }
+    ]
+  },
+  {
+    key:'gl', colId:'gl-task-col', dotsId:'gl-prog-dots', badgeId:'badge-2',
+    plotId:'plot-gl', overlayId:null,
+    tasks:[
+      { id:'gl-t1', title:'Question 1',
+        condition:()=> mag2(glSt.xgs,glSt.ygs)+glSt.rgs<A,
+        prompt:'Explore the charge in the bulk.',
+        question:'What must be true of the charge density in the bulk and why?' },
+      { id:'gl-t2', title:'Question 2',
+        condition:()=>{ const o=mag2(glSt.xgs,glSt.ygs)+glSt.rgs,i=mag2(glSt.xgs,glSt.ygs)-glSt.rgs; return (o>A)&&(i<A); },
+        prompt:'Explore the charge at the surface.',
+        question:'What must be true of the charge at the surface of a conductor and why?' }
+    ]
+  }
+];
+
+const taskState = {};
+TABS.forEach(tab=>tab.tasks.forEach(t=>{
+  taskState[t.id]={condMet:false, answer:'', snapshot:null};
+}));
+const activeTask={ef:0,pf:0,gl:0};
+
+/* Capture plot image — charges are now Plotly traces, no overlay needed */
+async function captureTabImage(tab) {
+  try {
+    const plotEl = document.getElementById(tab.plotId);
+    const w = plotEl.offsetWidth, h = plotEl.offsetHeight;
+    return await Plotly.toImage(plotEl, {format:'png', width:w, height:h});
+  } catch(e){ return null; }
+}
+
+/* Render active task card */
+function renderTask(tabKey) {
+  const tab=TABS.find(t=>t.key===tabKey);
+  const idx=activeTask[tabKey];
+  const task=tab.tasks[idx];
+  const ts=taskState[task.id];
+  const col=document.getElementById(tab.colId);
+  const total=tab.tasks.length;
+  const prevDis=idx===0?'disabled':'';
+  const nextDis=idx===total-1?'disabled':'';
+
+  const goalRow=`<div class="task-goal-row">
+    <span class="task-goal-text">${task.prompt}</span>
+    <button class="check-btn${ts.condMet?' met':''}" id="${task.id}-chkbtn" onclick="taskCheck('${tabKey}',${idx})">${ts.condMet?'&#10003; Met':'Check'}</button>
+    <span class="task-feedback${ts.condMet?' visible ok':''}" id="${task.id}-fb">${ts.condMet?'Condition met':''}</span>
+  </div>`;
+
+  const qLocked=ts.condMet?'':'locked';
+  const captureNote=ts.snapshot
+    ?'<span class="capture-note">&#128247; Plot captured</span>'
+    :(ts.condMet?'<span class="capture-note">&#128247; Awaiting next check</span>':'');
+
+  col.innerHTML=`
+    <div class="task-nav-row">
+      <button class="task-nav-btn" ${prevDis} onclick="navTask('${tabKey}',-1)">&#8592; Prev</button>
+      <span class="task-nav-label">${task.title} <span style="font-size:12px;font-weight:normal;color:var(--text-muted)">(${idx+1}/${total})</span></span>
+      <button class="task-nav-btn" ${nextDis} onclick="navTask('${tabKey}',1)">Next &#8594;</button>
+    </div>
+    ${goalRow}
+    <div class="task-question-area ${qLocked}" id="${task.id}-qarea">
+      <div class="question-prompt">&#9658;&nbsp;${task.question}</div>
+      <textarea class="question-input" id="${task.id}-input" placeholder="Write your answer here\u2026">${ts.answer}</textarea>
+    </div>
+    <div class="task-bottom-row">
+      <button class="save-answer-btn" onclick="taskSave('${tabKey}',${idx})">Save Answer</button>
+      <span class="saved-badge" id="${task.id}-saved">&#10003;&nbsp;Saved</span>
+      ${captureNote}
+    </div>`;
+
+  if(window.MathJax) MathJax.typesetPromise([col]).catch(()=>{});
+  renderDots(tabKey);
+}
+
+/* Progress dots */
+function renderDots(tabKey) {
+  const tab=TABS.find(t=>t.key===tabKey);
+  const idx=activeTask[tabKey];
+  const dotsEl=document.getElementById(tab.dotsId);
+  dotsEl.innerHTML=tab.tasks.map((t,i)=>{
+    const ts=taskState[t.id];
+    let cls='prog-dot';
+    if(ts.condMet) cls+=' done';
+    else if(i===idx) cls+=' active';
+    return `<div class="${cls}" title="${t.title}" onclick="activeTask['${tabKey}']=${i};renderTask('${tabKey}')"></div>`;
+  }).join('');
+  const done=tab.tasks.filter(t=>taskState[t.id].condMet).length;
+  const badge=document.getElementById(tab.badgeId);
+  badge.textContent=done+'/'+tab.tasks.length;
+  badge.className='tab-badge'+(done===tab.tasks.length?' all-done':'');
+}
+
+/* Navigate tasks */
+function navTask(tabKey,dir) {
+  const tab=TABS.find(t=>t.key===tabKey);
+  const cur=tab.tasks[activeTask[tabKey]];
+  const ta=document.getElementById(cur.id+'-input');
+  if(ta) taskState[cur.id].answer=ta.value;
+  activeTask[tabKey]=clamp(activeTask[tabKey]+dir,0,tab.tasks.length-1);
+  renderTask(tabKey);
+}
+
+/* Check condition — capture snapshot on first success */
+async function taskCheck(tabKey,idx) {
+  const tab=TABS.find(t=>t.key===tabKey);
+  const task=tab.tasks[idx];
+  const ts=taskState[task.id];
+  const ok=task.condition();
+  const fbEl=document.getElementById(task.id+'-fb');
+  if(ok) {
+    ts.condMet=true;
+    if(!ts.snapshot) ts.snapshot=await captureTabImage(tab);
+    renderTask(tabKey);  // re-render to unlock Q, show note, update button
+  } else {
+    if(fbEl){
+      fbEl.textContent='Not yet \u2014 keep exploring';
+      fbEl.className='task-feedback visible fail';
+      setTimeout(()=>{if(fbEl)fbEl.className='task-feedback';},2800);
+    }
+  }
+}
+
+/* Save answer text */
+function taskSave(tabKey,idx) {
+  const tab=TABS.find(t=>t.key===tabKey);
+  const task=tab.tasks[idx];
+  const ta=document.getElementById(task.id+'-input');
+  if(ta) taskState[task.id].answer=ta.value;
+  const badge=document.getElementById(task.id+'-saved');
+  if(badge){badge.classList.add('visible');setTimeout(()=>badge.classList.remove('visible'),2200);}
+}
+
+/* ════════════════════════════════════════════
+   TAB SWITCHING
+════════════════════════════════════════════ */
+function switchTab(i) {
+  document.querySelectorAll('.tab-pane').forEach((p,j)=>p.classList.toggle('active',i===j));
+  document.querySelectorAll('.tab-btn').forEach((b,j)=>b.classList.toggle('active',i===j));
+  setTimeout(()=>{
+    if(i===0) efUpdate();
+    if(i===1) pfUpdate();
+    if(i===2) glUpdate();
+  },50);
+}
+
+/* ════════════════════════════════════════════
+   PDF  — includes captured snapshots
+════════════════════════════════════════════ */
+function downloadPDF() {
+  const now=new Date().toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'});
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+  const ans=id=>{const v=taskState[id]&&taskState[id].answer;return v?esc(v):'<em style="color:#9C8C70">No answer provided.</em>';};
+  const snap=id=>taskState[id]&&taskState[id].snapshot?`<img src="${taskState[id].snapshot}" class="pi" alt="Plot capture at time of verification">`:
+    '<p style="font-size:11pt;color:#9C8C70;font-style:italic;">No plot capture (condition not verified).</p>';
+
+  const tabTitles=['Electric Fields','Potential Field','Gauss\u2019 Law Corollaries'];
+  let sectionsHTML='';
+  TABS.forEach((tab,ti)=>{
+    sectionsHTML+=`<h2>Tab ${ti+1}: ${tabTitles[ti]}</h2>`;
+    tab.tasks.forEach(task=>{
+      const ts=taskState[task.id];
+      const condStatus=ts.condMet
+        ?'<span style="color:#2A6E2A;">&#10003; Condition verified</span>'
+        :'<span style="color:#9C8C70;">&#9711; Condition not reached</span>';
+      sectionsHTML+=`<div class="tb"><h3>${task.title}</h3>
+        <p class="desc">${task.prompt}</p>
+        <p style="margin:4px 0 6px;font-size:11pt;">${condStatus}</p>
+        ${snap(task.id)}
+        <div class="ab"><p class="qp">&#9658; ${task.question}</p><div class="at">${ans(task.id)}</div></div>
+      </div>`;
+    });
+  });
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Conductor Properties</title>
+<script>window.MathJax={tex:{inlineMath:[['\\\\(','\\\\)']],displayMath:[['\\\\[','\\\\]']]}};<\/script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async><\/script>
+<style>
+body{font-family:'Baskerville Old Face',Baskerville,'Libre Baskerville',Georgia,serif;font-size:13pt;color:#1A1008;background:#fff;margin:0}
+.page{max-width:7.5in;margin:0 auto;padding:.65in .8in}
+h1{font-size:22pt;font-variant:small-caps;letter-spacing:.05em;border-bottom:3px double #8B7D5E;padding-bottom:8px;margin-bottom:6px}
+.meta{font-size:11pt;color:#5C4F38;font-style:italic;margin-bottom:24px}
+h2{font-size:17pt;font-variant:small-caps;color:#1B4F8A;border-bottom:1.5px solid #C8BFA0;padding-bottom:5px;margin:28px 0 14px}
+.tb{margin-bottom:18px;padding:12px 14px;border:1px solid #C8BFA0;background:#FAF8F2;page-break-inside:avoid}
+.tb h3{font-size:14pt;font-variant:small-caps;margin-bottom:3px}
+p.desc{font-style:italic;color:#5C4F38;font-size:11pt;margin:0 0 3px}
+.pi{display:block;max-width:100%;max-height:3.4in;width:auto;border:1px solid #C8BFA0;margin:8px 0 10px}
+.ab{margin-top:8px;padding:8px 10px;border-left:3px solid #B81C1C;background:#fff}
+.qp{font-size:12pt;color:#B81C1C;font-style:italic;margin-bottom:5px}
+.at{font-size:12pt;line-height:1.5}
+@media print{@page{margin:.65in;size:letter}body{font-size:12pt}}
+</style></head><body><div class="page">
+<h1>Conductor Properties</h1>
+<div class="meta">PHY 4300: Electricity &amp; Magnetism &mdash; Interactive Activity &bull; Generated: ${now}</div>
+${sectionsHTML}
+</div></body></html>`;
+
+  const w=window.open('','_blank','width=860,height=720');
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(()=>w.print(),1600);
+}
+
+/* ════════════════════════════════════════════
+   BOOT
+════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+
+  /* ─ Tab 0: Electric Fields ─ */
+  document.getElementById('ef-Q').addEventListener('input',()=>{ syncSlider('ef-Q','ef-Q-num',1); efUpdate(); });
+  document.getElementById('ef-induce').addEventListener('change', efUpdate);
+  document.getElementById('ef-showcharges').addEventListener('change', efUpdate);
+
+  // Arc slider
+  const ac=document.getElementById('ef-arc');
+  ac.addEventListener('mousedown',e=>{ efArcDrag=true; const r=ac.getBoundingClientRect(); efArcFromPos(e.clientX-r.left,e.clientY-r.top); });
+  ac.addEventListener('touchstart',e=>{ efArcDrag=true; const r=ac.getBoundingClientRect(); efArcFromPos(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); e.preventDefault(); },{passive:false});
+
+  // Joystick EF
+  const jcef=document.getElementById('ef-joystick');
+  jcef.addEventListener('mousedown',e=>{ efJoyDrag=true; const r=jcef.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.clientX-r.left,e.clientY-r.top); efSt.E0x=x;efSt.E0y=y; document.getElementById('ef-E0x-num').value=x.toFixed(0); document.getElementById('ef-E0y-num').value=y.toFixed(0); efUpdate(); });
+  jcef.addEventListener('touchstart',e=>{ efJoyDrag=true; const r=jcef.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); efSt.E0x=x;efSt.E0y=y; document.getElementById('ef-E0x-num').value=x.toFixed(0); document.getElementById('ef-E0y-num').value=y.toFixed(0); efUpdate(); e.preventDefault(); },{passive:false});
+
+  // Joystick GL
+  const jcgl=document.getElementById('gl-joystick');
+  jcgl.addEventListener('mousedown',e=>{ glJoyDrag=true; const r=jcgl.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.clientX-r.left,e.clientY-r.top); glSt.E0x=x;glSt.E0y=y; document.getElementById('gl-E0x-num').value=x.toFixed(0); document.getElementById('gl-E0y-num').value=y.toFixed(0); glUpdate(); });
+  jcgl.addEventListener('touchstart',e=>{ glJoyDrag=true; const r=jcgl.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); glSt.E0x=x;glSt.E0y=y; document.getElementById('gl-E0x-num').value=x.toFixed(0); document.getElementById('gl-E0y-num').value=y.toFixed(0); glUpdate(); e.preventDefault(); },{passive:false});
+
+  // Global mousemove/up for all drags
+  document.addEventListener('mousemove', e => {
+    if(efArcDrag){ const r=ac.getBoundingClientRect(); efArcFromPos(e.clientX-r.left,e.clientY-r.top); }
+    if(efJoyDrag){ const r=jcef.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.clientX-r.left,e.clientY-r.top); efSt.E0x=x;efSt.E0y=y; document.getElementById('ef-E0x-num').value=x.toFixed(0); document.getElementById('ef-E0y-num').value=y.toFixed(0); efUpdate(); }
+    if(glJoyDrag){ const r=jcgl.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.clientX-r.left,e.clientY-r.top); glSt.E0x=x;glSt.E0y=y; document.getElementById('gl-E0x-num').value=x.toFixed(0); document.getElementById('gl-E0y-num').value=y.toFixed(0); glUpdate(); }
+  });
+  document.addEventListener('mouseup',()=>{ efArcDrag=false; efJoyDrag=false; glJoyDrag=false; });
+  document.addEventListener('touchmove',e=>{
+    if(efArcDrag){ const r=ac.getBoundingClientRect(); efArcFromPos(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); e.preventDefault(); }
+    if(efJoyDrag){ const r=jcef.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); efSt.E0x=x;efSt.E0y=y; document.getElementById('ef-E0x-num').value=x.toFixed(0); document.getElementById('ef-E0y-num').value=y.toFixed(0); efUpdate(); e.preventDefault(); }
+    if(glJoyDrag){ const r=jcgl.getBoundingClientRect(); const [x,y]=joystickValFromPos(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top); glSt.E0x=x;glSt.E0y=y; document.getElementById('gl-E0x-num').value=x.toFixed(0); document.getElementById('gl-E0y-num').value=y.toFixed(0); glUpdate(); e.preventDefault(); }
+  },{passive:false});
+  document.addEventListener('touchend',()=>{ efArcDrag=false; efJoyDrag=false; glJoyDrag=false; });
+
+  /* ─ Tab 1: Potential Field ─ */
+  document.getElementById('pf-Q').addEventListener('input',()=>{ syncSlider('pf-Q','pf-Q-num',1); pfUpdate(); });
+  pfInitDrag();
+
+  /* ─ Tab 2: Gauss' Law ─ */
+  document.getElementById('gl-lam').addEventListener('input',()=>{ syncSlider('gl-lam','gl-lam-num',1); glUpdate(); });
+  glInitDrag();
+
+  /* ─ Init all plots ─ */
+  Plotly.newPlot('plot-ef', [], makeBaseLayout('plot-ef'), plotCfg).then(()=>{ efUpdate(); requestAnimationFrame(efAnimCharges); });
+  Plotly.newPlot('plot-pf', [], makeBaseLayout('plot-pf'), plotCfg).then(()=>pfUpdate());
+  Plotly.newPlot('plot-gl', [], makeBaseLayout('plot-gl'), plotCfg).then(()=>glUpdate());
+
+  /* ─ Init task panels for all tabs ─ */
+  TABS.forEach(tab=>renderTask(tab.key));
+
+  window.addEventListener('resize', ()=>{
+    efUpdate();
+    pfUpdate();
+    glUpdate();
+  });
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   TASK CONDITION VARIABLE REFERENCE
+   All variables available in task condition functions (the () => ... lambdas
+   in the TABS array above).  Conditions are re-evaluated on Check button press.
+
+   ── GLOBAL CONSTANTS ──────────────────────────────────────────────────────
+   A          = 5.0          conductor radius (cm)
+   winlim     = 10.0         half-width of plot window (cm)
+   eps0       = 8.86e-12     permittivity of free space (F/m)
+
+   ── TAB 0: ELECTRIC FIELDS  (state object: efSt) ──────────────────────────
+   efSt.Q          charge on conductor (nC, range −3…+3)
+   efSt.E0x        applied field x-component (V/m, range −2000…+2000)
+   efSt.E0y        applied field y-component (V/m, range −2000…+2000)
+   efSt.parperp    θ — angle of conductor axis relative to E0 (rad, 0…π/2)
+                     0 = perpendicular, π/2 = parallel
+   efSt.induce     boolean — induced-charge mode on
+   efSt.showCharges boolean — charge overlay visible
+
+   Derived / helper:
+   mag2(efSt.E0x, efSt.E0y)   magnitude of applied field |E0| (V/m)
+
+   ── TAB 1: POTENTIAL FIELD  (state object: pfSt) ──────────────────────────
+   pfSt.Q               charge on conductor (nC, range −3…+3)
+   pfSt.x1, pfSt.y1     raw drag position of P1 (cm)
+   pfSt.x2, pfSt.y2     raw drag position of P2 (cm)
+   pfSt.locktosurface   boolean — both points constrained to r = A
+   pfSt.measureatInfinity boolean — P2 placed at ∞ (V2 = 0)
+
+   Effective (constrained) point positions — use these in conditions:
+   pfComputePoints()  →  { x1, y1, x2, y2 }  (cm, after lock/infinity applied)
+
+   Derived / helper:
+   mag2(x1, y1)           distance of P1 from origin (cm)
+   mag2(x2, y2)           distance of P2 from origin (cm)
+   potentialAt(x, y, Q)   electric potential at (x,y) for charge Q nC (V)
+                            = 9e9·Q·1e-9 / max(r·0.01, A·0.01)  [constant inside]
+   DeltaV = V1 − V2       displayed potential difference (V)
+                            access as: const {x1,y1,x2,y2}=pfComputePoints();
+                                       const DV = potentialAt(x1,y1,pfSt.Q)
+                                                - (pfSt.measureatInfinity ? 0
+                                                   : potentialAt(x2,y2,pfSt.Q));
+
+   ── TAB 2: GAUSS' LAW  (state object: glSt) ───────────────────────────────
+   glSt.lambd      linear charge density λ (nC/m, range −1…+1)
+   glSt.E0x        applied field x-component (V/m, range −2000…+2000)
+   glSt.E0y        applied field y-component (V/m, range −2000…+2000)
+   glSt.xgs        Gaussian surface center x (cm)
+   glSt.ygs        Gaussian surface center y (cm)
+   glSt.rgs        Gaussian surface radius (cm, min 0.3)
+   glSt.tgs        angle of radius drag-handle (rad)
+
+   Derived / helper:
+   mag2(glSt.xgs, glSt.ygs)          distance of surface center from origin (cm)
+   mag2(glSt.xgs,glSt.ygs) + glSt.rgs   outermost point of surface (cm)
+   mag2(glSt.xgs,glSt.ygs) - glSt.rgs   innermost point of surface (cm)
+   glFluxOnSurface()  →  { tlist, flux, Qin }
+     flux   Float32Array — E·n̂ at each of 101 points on the surface (V/m)
+     Qin    enclosed charge estimate (C/m); displayed as Qin·1e9 nC/m
+
+   ── USEFUL GEOMETRY HELPERS (always available) ────────────────────────────
+   mag2(x, y)          √(x²+y²)
+   clamp(v, lo, hi)    clamp value to range
+   linspace(a, b, n)   array of n evenly spaced values from a to b
+════════════════════════════════════════════════════════════════════════════ */
+</script>
+</body>
+</html>
