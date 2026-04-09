@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Truth Table &amp; Karnaugh Map Editor — PHY/EGR 3120</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #F2EFE4;
+  --surface:   #FAF8F2;
+  --border:    #C8BFA0;
+  --border-dk: #8B7D5E;
+  --blue:      #1B4F8A;
+  --red:       #B81C1C;
+  --yellow:    #C8900A;
+  --black:     #1A1008;
+  --text:      #1A1008;
+  --text-dim:  #5C4F38;
+  --text-muted:#9C8C70;
+  --green:     #2A6E2A;
+  --hl-tt:     rgba(27,79,138,0.18);
+  --hl-agree:  rgba(42,110,42,0.28);
+  --hl-over:   rgba(200,144,10,0.28);
+  --font: 'Baskerville Old Face', 'Baskervville', 'Libre Baskerville', Baskerville, Georgia, serif;
+}
+
+html, body {
+  height: 100%;
+  background: #D8D0BC;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 18px;
+  overflow: hidden;
+}
+
+#page-wrapper {
+  max-width: 1100px;
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-left: 1px solid var(--border-dk);
+  border-right: 1px solid var(--border-dk);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+#site-header {
+  border-bottom: 3px double var(--border-dk);
+  padding: 10px 20px 8px;
+  display: flex; align-items: flex-end;
+  justify-content: space-between; gap: 16px;
+  flex-shrink: 0; background: var(--surface);
+}
+.header-titles { display: flex; flex-direction: column; gap: 2px; }
+.page-title {
+  font-size: 22px; font-weight: bold;
+  font-variant: small-caps; letter-spacing: 0.04em; color: var(--black);
+}
+.course-label { font-size: 16px; color: var(--text-dim); font-style: italic; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+
+.dl-btn {
+  background: var(--blue); border: none; color: #fff;
+  font-family: var(--font); font-size: 16px; font-variant: small-caps;
+  letter-spacing: 0.07em; padding: 5px 14px; cursor: pointer;
+  transition: background 0.15s;
+}
+.dl-btn:hover { background: #13376A; }
+
+.hint-btn {
+  background: none; border: 1.5px solid var(--border-dk); color: var(--text-dim);
+  font-family: var(--font); font-size: 16px; font-variant: small-caps;
+  letter-spacing: 0.06em; padding: 4px 12px; cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.hint-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ── Settings bar ── */
+#settings-bar {
+  border-bottom: 2px solid var(--border-dk);
+  padding: 8px 20px;
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  background: var(--surface); flex-shrink: 0;
+}
+.setting-group { display: flex; align-items: center; gap: 8px; }
+.setting-label {
+  font-size: 14px; font-variant: small-caps; letter-spacing: 0.16em;
+  color: var(--text-muted); text-transform: uppercase;
+}
+.setting-select {
+  border: 1px solid var(--border-dk); background: var(--bg);
+  color: var(--black); font-family: var(--font); font-size: 16px;
+  padding: 2px 6px; outline: none; cursor: pointer;
+}
+.setting-select:focus { border-color: var(--blue); }
+.seg-btns { display: flex; }
+.seg-btn {
+  border: 1px solid var(--border-dk); background: var(--bg);
+  color: var(--text-dim); font-family: var(--font); font-size: 15px;
+  padding: 3px 11px; cursor: pointer; transition: background 0.12s, color 0.12s;
+  border-right: none;
+}
+.seg-btn:last-child { border-right: 1px solid var(--border-dk); }
+.seg-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+/* ── Tab strip ── */
+.tab-strip {
+  display: flex; border-bottom: 2px solid var(--border-dk);
+  background: var(--surface); flex-shrink: 0;
+}
+.tab-btn {
+  background: none; border: none; border-right: 1px solid var(--border);
+  border-bottom: 3px solid transparent; color: var(--text-muted);
+  font-family: var(--font); font-size: 17px; font-variant: small-caps;
+  letter-spacing: 0.05em; padding: 7px 24px 5px; cursor: pointer;
+  position: relative; bottom: -2px; transition: color 0.15s;
+}
+.tab-btn:hover { color: var(--blue); }
+.tab-btn.active {
+  color: var(--blue); border-bottom-color: var(--blue);
+  background: var(--bg); font-weight: bold;
+}
+
+/* ── Main ── */
+#main-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.tab-pane { display: none; flex: 1; overflow: auto; padding: 20px; }
+.tab-pane.active { display: block; }
+
+/* ── Truth Table ── */
+#truth-table-wrap { overflow: auto; }
+table.tt {
+  border-collapse: collapse; font-size: 16px;
+  font-family: 'Courier New', 'Consolas', monospace;
+}
+table.tt th, table.tt td {
+  border: 1px solid var(--border-dk); padding: 5px 14px;
+  text-align: center; min-width: 48px;
+}
+table.tt th {
+  background: var(--surface); font-family: var(--font);
+  font-variant: small-caps; letter-spacing: 0.1em;
+  font-size: 16px; color: var(--text-dim); font-weight: normal;
+}
+table.tt th.input-hdr  { color: var(--blue); }
+table.tt th.output-hdr { color: var(--red); }
+table.tt th.row-hdr    { color: var(--text-muted); font-size: 14px; }
+table.tt td.input-cell  { color: var(--text-dim); background: var(--surface); }
+table.tt td.output-cell {
+  cursor: pointer; color: var(--black); font-weight: bold; transition: background 0.1s;
+}
+table.tt td.output-cell:hover { background: #E8E0CC; }
+table.tt td.output-cell.bit-1 { color: var(--blue); }
+table.tt tr:hover td { background: #EDE8DC; }
+table.tt tr:hover td.output-cell:hover { background: #E0D8C8; }
+.invert-row th { padding: 3px 6px; }
+.invert-btn {
+  font-family: var(--font); font-size: 13px; font-variant: small-caps;
+  letter-spacing: 0.08em; border: 1px solid var(--border-dk);
+  background: var(--bg); color: var(--text-dim); padding: 2px 8px;
+  cursor: pointer; display: block; margin: 2px auto 0; transition: background 0.12s;
+}
+.invert-btn:hover { background: var(--border); }
+
+/* ── K-map ── */
+#kmap-view { display: flex; flex-direction: column; gap: 16px; }
+.kmap-grid-2x2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.kmap-panel {
+  border: 1.5px solid var(--border-dk); background: var(--surface); padding: 14px 16px;
+}
+.kmap-panel-title {
+  font-size: 16px; font-variant: small-caps; letter-spacing: 0.15em;
+  color: var(--text-dim); margin-bottom: 10px;
+  border-bottom: 1px solid var(--border); padding-bottom: 4px;
+}
+table.kmap { border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 15px; }
+table.kmap td, table.kmap th {
+  border: 1px solid var(--border-dk); text-align: center;
+  width: 46px; height: 46px;
+}
+table.kmap th {
+  background: var(--surface); font-family: var(--font); font-variant: small-caps;
+  letter-spacing: 0.06em; font-size: 14px; font-weight: normal; color: var(--text-dim);
+  min-width: 46px;
+}
+table.kmap td.kmap-cell { font-weight: bold; font-size: 16px; color: var(--black); }
+table.kmap td.kmap-cell.hl-tt    { background: var(--hl-tt); }
+table.kmap td.kmap-cell.hl-agree { background: var(--hl-agree); color: var(--green); }
+table.kmap td.kmap-cell.hl-over  { background: var(--hl-over);  color: var(--yellow); }
+
+/* ── Expression area ── */
+.expr-area { margin-top: 12px; }
+.expr-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.expr-label {
+  font-size: 17px; font-family: var(--font); color: var(--text-dim);
+  font-style: italic; white-space: nowrap;
+}
+.expr-input {
+  flex: 1; border: 1.5px solid var(--border-dk); background: var(--bg);
+  color: var(--black); font-family: 'Courier New', monospace; font-size: 16px;
+  padding: 4px 8px; outline: none; transition: border-color 0.15s;
+}
+.expr-input:focus { border-color: var(--blue); }
+.expr-input.parse-err { border-color: var(--red); background: #FFF4F4; }
+.expr-status { font-size: 14px; font-style: italic; color: var(--text-muted); min-height: 20px; }
+.expr-status.ok      { color: var(--green); }
+.expr-status.partial { color: var(--yellow); }
+.expr-status.err     { color: var(--red); }
+.expr-hint { font-size: 14px; color: var(--text-muted); margin-top: 5px; font-style: italic; }
+
+/* Legend */
+.kmap-legend {
+  display: flex; gap: 18px; flex-wrap: wrap; font-size: 14px; align-items: center;
+}
+.legend-swatch {
+  width: 15px; height: 15px; display: inline-block;
+  border: 1px solid var(--border-dk); vertical-align: middle; margin-right: 4px;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45); z-index: 100;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 2px solid var(--border-dk);
+  max-width: 700px; width: 92%; max-height: 86vh; overflow-y: auto;
+  padding: 24px 28px;
+}
+.modal-title {
+  font-size: 20px; font-variant: small-caps; letter-spacing: 0.05em;
+  color: var(--black); border-bottom: 2px solid var(--border-dk);
+  padding-bottom: 8px; margin-bottom: 16px;
+}
+.modal-close {
+  float: right; background: none; border: none; font-size: 22px;
+  cursor: pointer; color: var(--text-dim); margin-top: -4px;
+}
+.modal-close:hover { color: var(--red); }
+.hint-section { margin-bottom: 20px; }
+.hint-section h3 {
+  font-size: 16px; font-variant: small-caps; letter-spacing: 0.1em;
+  color: var(--blue); margin-bottom: 10px;
+}
+.hint-grid { display: flex; flex-wrap: wrap; gap: 14px; }
+.hint-kmap { border: 1px solid var(--border-dk); padding: 8px; background: var(--bg); }
+.hint-kmap-title {
+  font-size: 13px; font-variant: small-caps; letter-spacing: 0.1em;
+  color: var(--text-muted); margin-bottom: 6px; text-align: center;
+}
+.hint-cells { display: grid; gap: 2px; }
+.hint-cell {
+  width: 30px; height: 30px; border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: monospace; font-size: 13px; background: var(--bg);
+}
+.hint-cell.hl { background: rgba(27,79,138,0.25); border-color: var(--blue); font-weight: bold; }
+.hint-note { font-size: 15px; font-style: italic; color: var(--text-dim); margin-top: 12px; line-height: 1.55; }
+.syntax-box {
+  background: var(--bg); border: 1px solid var(--border-dk);
+  padding: 12px 16px; font-family: 'Courier New', monospace; font-size: 15px;
+  line-height: 1.8; margin-bottom: 14px;
+}
+.syntax-box .note { color: var(--text-muted); font-family: var(--font); font-size: 14px; }
+</style>
+</head>
+<body>
+<div id="page-wrapper">
+
+  <div id="site-header">
+    <div class="header-titles">
+      <div class="page-title">Truth Table &amp; Karnaugh Map Editor</div>
+      <div class="course-label">PHY/EGR 3120: Electronics &mdash; Logic Design Tool</div>
+    </div>
+    <div class="header-right">
+      <button class="hint-btn" onclick="openHint()">&#9432; K-map Guide</button>
+      <button class="dl-btn" onclick="exportPDF()">&#8659; Download PDF</button>
+    </div>
+  </div>
+
+  <div id="settings-bar">
+    <div class="setting-group">
+      <span class="setting-label">Inputs</span>
+      <select class="setting-select" id="sel-inputs" onchange="onSettingsChange()">
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4" selected>4</option>
+      </select>
+    </div>
+    <div class="setting-group">
+      <span class="setting-label">Outputs</span>
+      <select class="setting-select" id="sel-outputs" onchange="onSettingsChange()">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+    <div class="setting-group" id="grouping-group">
+      <span class="setting-label">K-map Grouping</span>
+      <div class="seg-btns" id="grouping-btns"></div>
+    </div>
+  </div>
+
+  <div class="tab-strip">
+    <button class="tab-btn active" onclick="switchTab('truth-table')">Truth Table</button>
+    <button class="tab-btn" onclick="switchTab('kmap')">Karnaugh Map</button>
+  </div>
+
+  <div id="main-content">
+    <div class="tab-pane active" id="pane-truth-table">
+      <div id="truth-table-wrap"></div>
+    </div>
+    <div class="tab-pane" id="pane-kmap">
+      <div id="kmap-view"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Hint Modal -->
+<div class="modal-overlay" id="hint-modal" onclick="closeHintIfBg(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeHint()">&times;</button>
+    <div class="modal-title">K-map Guide</div>
+
+    <div class="hint-section">
+      <h3>Expression Syntax</h3>
+      <div class="syntax-box">
+AB' + AC      <span class="note">— AND by adjacency, OR by +, NOT by apostrophe</span>
+!A + B        <span class="note">— ! also works as NOT</span>
+A^B           <span class="note">— XOR (also accepts ⊕)</span>
+A'B + BC' + A^C  <span class="note">— mixed example</span>
+(A^B)C'       <span class="note">— parentheses supported</span>
+      </div>
+      <div class="hint-note">
+        Variables: <strong>A, B, C, D</strong> &nbsp;·&nbsp;
+        <strong>^</strong> or <strong>⊕</strong> = XOR &nbsp;·&nbsp;
+        <strong>'</strong> or <strong>!</strong> = NOT &nbsp;·&nbsp;
+        <strong>+</strong> = OR &nbsp;·&nbsp; adjacency = AND
+      </div>
+    </div>
+
+    <div class="hint-section">
+      <h3>Cell Colours</h3>
+      <div class="hint-note" style="margin-top:0;line-height:2;">
+        <span style="display:inline-block;width:14px;height:14px;background:rgba(27,79,138,0.25);border:1px solid #1B4F8A;vertical-align:middle;margin-right:5px;"></span>
+        <strong>Blue</strong> — output is 1, not covered by expression<br>
+        <span style="display:inline-block;width:14px;height:14px;background:rgba(42,110,42,0.35);border:1px solid #2A6E2A;vertical-align:middle;margin-right:5px;"></span>
+        <strong>Green</strong> — output is 1 and expression agrees<br>
+        <span style="display:inline-block;width:14px;height:14px;background:rgba(200,144,10,0.35);border:1px solid #C8900A;vertical-align:middle;margin-right:5px;"></span>
+        <strong>Amber</strong> — expression covers this cell but output is 0 (over-coverage)
+      </div>
+    </div>
+
+    <div class="hint-section">
+      <h3>Group of 1 — full minterm</h3>
+      <div class="hint-grid" id="hint-g1"></div>
+    </div>
+    <div class="hint-section">
+      <h3>Group of 2 — one variable dropped</h3>
+      <div class="hint-grid" id="hint-g2"></div>
+    </div>
+    <div class="hint-section">
+      <h3>Group of 4 — two variables dropped</h3>
+      <div class="hint-grid" id="hint-g4"></div>
+    </div>
+    <div class="hint-section">
+      <h3>Group of 8 — three variables dropped</h3>
+      <div class="hint-grid" id="hint-g8"></div>
+    </div>
+    <div class="hint-note">
+      Toroidal wrapping: leftmost/rightmost columns are logically adjacent (Gray code),
+      as are top and bottom rows. Corner groups of 4 are valid.
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CONSTANTS
+═══════════════════════════════════════ */
+const VARS4 = ['A','B','C','D'];
+const VARS3 = ['A','B','C'];
+const VARS2 = ['A','B'];
+const GROUPINGS4 = ['AB/CD','AC/BD','AD/BC'];
+const GROUPINGS3 = ['AB/C','AC/B','BC/A'];
+const GROUPINGS2 = ['A/B'];
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+let state = { nIn:4, nOut:1, groupingIdx:0, outputs:[], exprs:[] };
+
+/* ═══════════════════════════════════════
+   INIT / SETTINGS
+═══════════════════════════════════════ */
+function initState() {
+  const nRows = 1 << state.nIn;
+  for (let oi = 0; oi < state.nOut; oi++) {
+    state.outputs.push(new Array(nRows).fill(0));
+    state.exprs.push('');
+  }
+  updateGroupingBtns();
+  render();
+}
+
+function onSettingsChange() {
+  const newIn  = parseInt(document.getElementById('sel-inputs').value);
+  const newOut = parseInt(document.getElementById('sel-outputs').value);
+  const oldIn = state.nIn, oldOut = state.nOut;
+  const oldRows = 1 << oldIn, newRows = 1 << newIn;
+  const newOutputs = [], newExprs = [];
+  for (let oi = 0; oi < newOut; oi++) {
+    const old = oi < oldOut ? state.outputs[oi] : null;
+    const arr = [];
+    for (let r = 0; r < newRows; r++) arr.push(old && r < oldRows ? old[r] : 0);
+    newOutputs.push(arr);
+    newExprs.push(oi < oldOut && newIn === oldIn ? state.exprs[oi] : '');
+  }
+  state.nIn = newIn; state.nOut = newOut;
+  state.outputs = newOutputs; state.exprs = newExprs;
+  state.groupingIdx = 0;
+  updateGroupingBtns();
+  render();
+}
+
+function updateGroupingBtns() {
+  const n = state.nIn;
+  const options = n === 2 ? GROUPINGS2 : n === 3 ? GROUPINGS3 : GROUPINGS4;
+  const container = document.getElementById('grouping-btns');
+  container.innerHTML = '';
+  if (options.length === 1) {
+    state.groupingIdx = 0;
+    document.getElementById('grouping-group').style.display = 'none';
+    return;
+  }
+  document.getElementById('grouping-group').style.display = '';
+  options.forEach((label, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'seg-btn' + (idx === state.groupingIdx ? ' active' : '');
+    btn.textContent = label;
+    btn.onclick = () => {
+      state.groupingIdx = idx;
+      document.querySelectorAll('#grouping-btns .seg-btn')
+        .forEach((b,i) => b.classList.toggle('active', i === idx));
+      renderKmap();
+    };
+    container.appendChild(btn);
+  });
+}
+
+function switchTab(which) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + which).classList.add('active');
+  document.querySelectorAll('.tab-btn')[which === 'truth-table' ? 0 : 1].classList.add('active');
+}
+
+function render() { renderTruthTable(); renderKmap(); }
+
+/* ═══════════════════════════════════════
+   EXPRESSION PARSER
+   Grammar:
+     expr   = term ('+' term)*
+     term   = xor (xor)*          ← AND by adjacency
+     xor    = atom ('^' atom)*
+     atom   = var["'"]* | '!'atom | '('expr')'["'"]*
+═══════════════════════════════════════ */
+function parseExpr(src) {
+  src = src.replace(/⊕/g, '^').replace(/\s+/g, '');
+  if (!src) return () => 0;
+  let pos = 0;
+  const peek = () => src[pos] ?? '';
+
+  function parseExpression() {
+    let L = parseTerm();
+    while (peek() === '+') { pos++; const R = parseTerm(); const _L=L,_R=R; L = e=>_L(e)|_R(e); }
+    return L;
+  }
+  function parseTerm() {
+    let L = parseXor();
+    while (/[A-Da-d!(]/.test(peek())) {
+      const R = parseXor(); const _L=L,_R=R; L = e=>_L(e)&_R(e);
+    }
+    return L;
+  }
+  function parseXor() {
+    let L = parseAtom();
+    while (peek() === '^') { pos++; const R = parseAtom(); const _L=L,_R=R; L = e=>_L(e)^_R(e); }
+    return L;
+  }
+  function parseAtom() {
+    if (peek() === '!') { pos++; const I = parseAtom(); return e=>I(e)^1; }
+    if (peek() === '(') {
+      pos++;
+      const I = parseExpression();
+      if (peek() !== ')') throw new Error(`Missing ) at ${pos}`);
+      pos++;
+      let f = I;
+      while (peek() === "'") { pos++; const fi=f; f=e=>fi(e)^1; }
+      return f;
+    }
+    const ch = peek().toUpperCase();
+    if (/[A-D]/.test(ch)) {
+      pos++;
+      let f = e=>e[ch]??0;
+      while (peek() === "'") { pos++; const fi=f; f=e=>fi(e)^1; }
+      return f;
+    }
+    throw new Error(`Unexpected '${peek()}' at ${pos}`);
+  }
+
+  const fn = parseExpression();
+  if (pos < src.length) throw new Error(`Trailing chars at ${pos}`);
+  return fn;
+}
+
+function evalExpr(exprStr, nIn) {
+  const vars = nIn === 2 ? VARS2 : nIn === 3 ? VARS3 : VARS4;
+  const nRows = 1 << nIn;
+  try {
+    const fn = parseExpr(exprStr);
+    return Array.from({length:nRows}, (_,r) => {
+      const env = {};
+      vars.forEach((v,vi) => { env[v] = (r>>(nIn-1-vi))&1; });
+      return fn(env)&1;
+    });
+  } catch(e) { return null; }
+}
+
+/* ═══════════════════════════════════════
+   GRAY CODE / LAYOUT
+═══════════════════════════════════════ */
+function grayCode(n) { return n ^ (n>>1); }
+function graySeq(len) { return Array.from({length:len}, (_,i) => grayCode(i)); }
+
+function getKmapLayout() {
+  const n = state.nIn, gi = state.groupingIdx;
+  if (n === 2) return {rowVars:['A'], colVars:['B'], nRows:2, nCols:2};
+  if (n === 3) {
+    const pairs = [['A','B'],['A','C'],['B','C']];
+    const singles = [['C'],['B'],['A']];
+    return {rowVars:pairs[gi], colVars:singles[gi], nRows:4, nCols:2};
+  }
+  const p1 = [['A','B'],['A','C'],['A','D']];
+  const p2 = [['C','D'],['B','D'],['B','C']];
+  return {rowVars:p1[gi], colVars:p2[gi], nRows:4, nCols:4};
+}
+
+function cellToMinterm(ri, ci, layout) {
+  const n = state.nIn;
+  const allVars = n===2?VARS2:n===3?VARS3:VARS4;
+  const rGray = grayCode(ri), cGray = grayCode(ci);
+  const bv = {};
+  layout.rowVars.forEach((v,vi) => { bv[v] = (rGray>>(layout.rowVars.length-1-vi))&1; });
+  layout.colVars.forEach((v,vi) => { bv[v] = (cGray>>(layout.colVars.length-1-vi))&1; });
+  let m = 0;
+  allVars.forEach((v,vi) => { m |= (bv[v]<<(n-1-vi)); });
+  return m;
+}
+
+function grayBits(gray, len) {
+  let s=''; for (let i=len-1;i>=0;i--) s+=(gray>>i)&1; return s;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ═══════════════════════════════════════
+   TRUTH TABLE
+═══════════════════════════════════════ */
+function renderTruthTable() {
+  const n = state.nIn, nRows = 1<<n;
+  const vars = n===2?VARS2:n===3?VARS3:VARS4;
+  const wrap = document.getElementById('truth-table-wrap');
+  const outLabels = state.outputs.map((_,i) => state.nOut>1?`Y${i}`:'Y');
+
+  let html = '<table class="tt"><thead>';
+  html += '<tr class="invert-row"><th class="row-hdr"></th>';
+  vars.forEach(() => html += '<th></th>');
+  outLabels.forEach((_,oi) =>
+    html += `<th class="output-hdr"><button class="invert-btn" onclick="invertCol(${oi})">invert</button></th>`);
+  html += '</tr><tr><th class="row-hdr">#</th>';
+  vars.forEach(v => html += `<th class="input-hdr">${v}</th>`);
+  outLabels.forEach(lbl => html += `<th class="output-hdr">${lbl}</th>`);
+  html += '</tr></thead><tbody>';
+
+  for (let r = 0; r < nRows; r++) {
+    html += '<tr>';
+    html += `<td class="input-cell" style="font-size:14px;color:var(--text-muted)">${r}</td>`;
+    vars.forEach((v,vi) => html += `<td class="input-cell">${(r>>(n-1-vi))&1}</td>`);
+    state.outputs.forEach((out,oi) => {
+      const b = out[r];
+      html += `<td class="output-cell${b?' bit-1':''}" onclick="toggleBit(${oi},${r})">${b}</td>`;
+    });
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function toggleBit(oi, row) { state.outputs[oi][row] ^= 1; render(); }
+function invertCol(oi) { state.outputs[oi].forEach((_,r) => state.outputs[oi][r] ^= 1); render(); }
+
+/* ═══════════════════════════════════════
+   K-MAP
+═══════════════════════════════════════ */
+function renderKmap() {
+  const layout = getKmapLayout();
+  const view = document.getElementById('kmap-view');
+  const useGrid = state.nOut > 1;
+
+  let html = `<div class="kmap-legend">
+    <span><span class="legend-swatch" style="background:var(--hl-tt);border-color:var(--blue)"></span>Output=1, not covered</span>
+    <span><span class="legend-swatch" style="background:var(--hl-agree);border-color:var(--green)"></span>Output=1, expression agrees</span>
+    <span><span class="legend-swatch" style="background:var(--hl-over);border-color:var(--yellow)"></span>Expression covers Output=0</span>
+  </div>`;
+
+  if (useGrid) html += '<div class="kmap-grid-2x2">';
+
+  for (let oi = 0; oi < state.nOut; oi++) {
+    const outLabel = state.nOut>1 ? `Output Y${oi}` : 'Output Y';
+    const exprVal = state.exprs[oi] || '';
+    const exprResult = evalExpr(exprVal, state.nIn);
+    const parseErr = exprVal.trim() !== '' && exprResult === null;
+
+    // Status message
+    let statusText = '', statusClass = '';
+    if (exprResult && exprVal.trim()) {
+      const tt = state.outputs[oi];
+      const ones  = tt.filter(b=>b===1).length;
+      const covered = tt.filter((b,r)=>b===1&&exprResult[r]===1).length;
+      const over  = exprResult.filter((b,r)=>b===1&&tt[r]===0).length;
+      if (over===0 && covered===ones && ones>0) {
+        statusText='✓ Expression matches output exactly'; statusClass='ok';
+      } else if (ones===0 && exprResult.every(b=>b===0)) {
+        statusText='✓ Expression correctly evaluates to 0'; statusClass='ok';
+      } else if (over>0 && covered===ones) {
+        statusText=`Covers all 1s but ${over} extra cell${over>1?'s':''} (over-coverage)`; statusClass='partial';
+      } else if (over===0) {
+        statusText=`Covers ${covered} of ${ones} output 1s (incomplete)`; statusClass='partial';
+      } else {
+        statusText=`Covers ${covered} of ${ones} output 1s, ${over} over-coverage`; statusClass='partial';
+      }
+    } else if (parseErr) {
+      statusText='Syntax error — check expression'; statusClass='err';
+    }
+
+    const yl = state.nOut>1 ? `Y${oi}` : 'Y';
+    html += `<div class="kmap-panel">
+      <div class="kmap-panel-title">${outLabel}</div>
+      ${buildKmapTable(oi, layout, exprResult)}
+      <div class="expr-area">
+        <div class="expr-row">
+          <span class="expr-label">${yl} =</span>
+          <input class="expr-input${parseErr?' parse-err':''}"
+            id="expr-input-${oi}" type="text"
+            value="${escHtml(exprVal)}"
+            placeholder="e.g. AB' + C^D"
+            oninput="onExprInput(${oi}, this.value)">
+        </div>
+        <div class="expr-status ${statusClass}">${statusText}</div>
+        <div class="expr-hint">Use&nbsp;<strong>'</strong>&nbsp;or&nbsp;<strong>!</strong>&nbsp;for NOT &nbsp;·&nbsp; <strong>^</strong>&nbsp;or&nbsp;<strong>⊕</strong>&nbsp;for XOR &nbsp;·&nbsp; <strong>+</strong>&nbsp;for OR &nbsp;·&nbsp; adjacency for AND</div>
+      </div>
+    </div>`;
+  }
+
+  if (useGrid) html += '</div>';
+  view.innerHTML = html;
+}
+
+function buildKmapTable(oi, layout, exprResult) {
+  const {rowVars, colVars, nRows, nCols} = layout;
+  const rLen=rowVars.length, cLen=colVars.length;
+  const rSeq=graySeq(nRows), cSeq=graySeq(nCols);
+
+  let html = `<table class="kmap"><thead><tr>`;
+  html += `<th style="border:none;background:transparent;font-size:14px;color:var(--text-dim)">${rowVars.join('')}\\${colVars.join('')}</th>`;
+  for (let ci=0;ci<nCols;ci++) html += `<th>${grayBits(cSeq[ci],cLen)}</th>`;
+  html += '</tr></thead><tbody>';
+
+  for (let ri=0;ri<nRows;ri++) {
+    html += `<tr><th>${grayBits(rSeq[ri],rLen)}</th>`;
+    for (let ci=0;ci<nCols;ci++) {
+      const m = cellToMinterm(ri, ci, layout);
+      const bit = state.outputs[oi][m];
+      const eb = exprResult ? exprResult[m] : null;
+      let hlClass = '';
+      if (eb !== null) {
+        if (bit===1&&eb===1)      hlClass='hl-agree';
+        else if (bit===1&&eb===0) hlClass='hl-tt';
+        else if (bit===0&&eb===1) hlClass='hl-over';
+      } else if (bit===1)         hlClass='hl-tt';
+      html += `<td class="kmap-cell${hlClass?' '+hlClass:''}">${bit}</td>`;
+    }
+    html += '</tr>';
+  }
+  return html + '</tbody></table>';
+}
+
+function onExprInput(oi, val) {
+  state.exprs[oi] = val;
+  // Save cursor position before re-render
+  const input = document.getElementById(`expr-input-${oi}`);
+  const selStart = input ? input.selectionStart : null;
+  renderKmap();
+  const newInput = document.getElementById(`expr-input-${oi}`);
+  if (newInput && selStart !== null) {
+    newInput.focus();
+    newInput.setSelectionRange(selStart, selStart);
+  }
+}
+
+/* ═══════════════════════════════════════
+   HINT MODAL
+═══════════════════════════════════════ */
+function buildHintCells(rows, cols, highlighted) {
+  let html = `<div class="hint-cells" style="grid-template-columns:repeat(${cols},30px)">`;
+  for (let r=0;r<rows;r++)
+    for (let c=0;c<cols;c++) {
+      const hl = highlighted.has(`${r},${c}`);
+      html += `<div class="hint-cell${hl?' hl':''}">${hl?'1':''}</div>`;
+    }
+  return html+'</div>';
+}
+function buildHintKmap(title, rows, cols, highlighted) {
+  return `<div class="hint-kmap"><div class="hint-kmap-title">${title}</div>${buildHintCells(rows,cols,highlighted)}</div>`;
+}
+function openHint() {
+  document.getElementById('hint-g1').innerHTML =
+    buildHintKmap('Corner cell',4,4,new Set(['0,0']))+
+    buildHintKmap('Interior cell',4,4,new Set(['1,2']));
+  document.getElementById('hint-g2').innerHTML =
+    buildHintKmap('Horizontal pair',4,4,new Set(['0,0','0,1']))+
+    buildHintKmap('Vertical pair',4,4,new Set(['0,0','1,0']))+
+    buildHintKmap('Wrap: cols 0&3',4,4,new Set(['0,0','0,3']))+
+    buildHintKmap('Wrap: rows 0&3',4,4,new Set(['0,0','3,0']));
+  document.getElementById('hint-g4').innerHTML =
+    buildHintKmap('2×2 block',4,4,new Set(['0,0','0,1','1,0','1,1']))+
+    buildHintKmap('1×4 row',4,4,new Set(['0,0','0,1','0,2','0,3']))+
+    buildHintKmap('4×1 col',4,4,new Set(['0,0','1,0','2,0','3,0']))+
+    buildHintKmap('4 corners',4,4,new Set(['0,0','0,3','3,0','3,3']));
+  document.getElementById('hint-g8').innerHTML =
+    buildHintKmap('Top 2 rows',4,4,new Set([0,1].flatMap(r=>[0,1,2,3].map(c=>`${r},${c}`))))+
+    buildHintKmap('Left 2 cols',4,4,new Set([0,1,2,3].flatMap(r=>[0,1].map(c=>`${r},${c}`))));
+  document.getElementById('hint-modal').classList.add('open');
+}
+function closeHint() { document.getElementById('hint-modal').classList.remove('open'); }
+function closeHintIfBg(e) { if(e.target===document.getElementById('hint-modal')) closeHint(); }
+
+/* ═══════════════════════════════════════
+   PDF EXPORT
+═══════════════════════════════════════ */
+function exportPDF() {
+  const n = state.nIn, nRows = 1<<n;
+  const vars = n===2?VARS2:n===3?VARS3:VARS4;
+  const layout = getKmapLayout();
+  const now = new Date().toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'});
+  const gOptions = n===2?GROUPINGS2:n===3?GROUPINGS3:GROUPINGS4;
+  const groupingStr = gOptions[state.groupingIdx];
+  const outLabels = state.outputs.map((_,i)=>state.nOut>1?`Y${i}`:'Y');
+
+  // Truth table
+  let ttHtml = `<table style="border-collapse:collapse;font-family:'Courier New',monospace;font-size:12pt;"><thead><tr>`;
+  ttHtml += `<th style="border:1px solid #8B7D5E;padding:5px 12px;font-family:serif;font-variant:small-caps;color:#5C4F38;">#</th>`;
+  vars.forEach(v => ttHtml+=`<th style="border:1px solid #8B7D5E;padding:5px 14px;font-family:serif;font-variant:small-caps;color:#1B4F8A;">${v}</th>`);
+  outLabels.forEach(lbl => ttHtml+=`<th style="border:1px solid #8B7D5E;padding:5px 14px;font-family:serif;font-variant:small-caps;color:#B81C1C;">${lbl}</th>`);
+  ttHtml += '</tr></thead><tbody>';
+  for (let r=0;r<nRows;r++) {
+    ttHtml += '<tr>';
+    ttHtml += `<td style="border:1px solid #C8BFA0;padding:4px 12px;text-align:center;color:#9C8C70;">${r}</td>`;
+    vars.forEach((v,vi) => ttHtml+=`<td style="border:1px solid #C8BFA0;padding:4px 14px;text-align:center;background:#FAF8F2;">${(r>>(n-1-vi))&1}</td>`);
+    state.outputs.forEach((out,oi) => {
+      const b=out[r];
+      ttHtml+=`<td style="border:1px solid #C8BFA0;padding:4px 14px;text-align:center;font-weight:bold;${b?'color:#1B4F8A':''}">${b}</td>`;
+    });
+    ttHtml += '</tr>';
+  }
+  ttHtml += '</tbody></table>';
+
+  // K-maps
+  const {rowVars,colVars,nRows:kmRows,nCols:kmCols} = layout;
+  const rLen=rowVars.length, cLen=colVars.length;
+  const rSeq=graySeq(kmRows), cSeq=graySeq(kmCols);
+  const useGrid = state.nOut>1;
+  let kmHtml = useGrid?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">':'';
+
+  for (let oi=0;oi<state.nOut;oi++) {
+    const exprResult = evalExpr(state.exprs[oi], n);
+    const outLabel = state.nOut>1?`Output Y${oi}`:'Output Y';
+    const yl = outLabels[oi];
+    const exprStr = state.exprs[oi]||'(none)';
+
+    let tHtml = `<table style="border-collapse:collapse;font-family:'Courier New',monospace;font-size:12pt;"><thead><tr>`;
+    tHtml += `<th style="border:none;font-family:serif;font-size:12pt;color:#5C4F38;">${rowVars.join('')}\\${colVars.join('')}</th>`;
+    for (let ci=0;ci<kmCols;ci++)
+      tHtml+=`<th style="border:1px solid #8B7D5E;padding:5px 10px;font-family:serif;font-size:12pt;color:#5C4F38;">${grayBits(cSeq[ci],cLen)}</th>`;
+    tHtml+='</tr></thead><tbody>';
+
+    for (let ri=0;ri<kmRows;ri++) {
+      tHtml+=`<tr><th style="border:1px solid #8B7D5E;padding:5px 10px;font-family:serif;font-size:12pt;color:#5C4F38;">${grayBits(rSeq[ri],rLen)}</th>`;
+      for (let ci=0;ci<kmCols;ci++) {
+        const m=cellToMinterm(ri,ci,layout);
+        const bit=state.outputs[oi][m];
+        const eb=exprResult?exprResult[m]:null;
+        let bg='';
+        if(eb!==null){
+          if(bit===1&&eb===1) bg='background:rgba(42,110,42,0.2);color:#2A6E2A;';
+          else if(bit===1)    bg='background:rgba(27,79,138,0.15);color:#1B4F8A;';
+          else if(eb===1)     bg='background:rgba(200,144,10,0.2);color:#C8900A;';
+        } else if(bit===1)    bg='background:rgba(27,79,138,0.15);color:#1B4F8A;';
+        tHtml+=`<td style="border:1px solid #C8BFA0;padding:8px 10px;text-align:center;font-weight:bold;min-width:36px;${bg}">${bit}</td>`;
+      }
+      tHtml+='</tr>';
+    }
+    tHtml+='</tbody></table>';
+
+    kmHtml+=`<div style="border:1px solid #C8BFA0;padding:14px;background:#FAF8F2;break-inside:avoid;margin-bottom:8px;">
+      <div style="font-family:serif;font-variant:small-caps;font-size:13pt;color:#5C4F38;margin-bottom:10px;border-bottom:1px solid #C8BFA0;padding-bottom:4px;">${outLabel}</div>
+      ${tHtml}
+      <div style="margin-top:10px;font-family:'Courier New',monospace;font-size:12pt;">
+        <span style="font-family:serif;color:#5C4F38;">${yl} = </span>${escHtml(exprStr)}
+      </div>
+    </div>`;
+  }
+  if(useGrid) kmHtml+='</div>';
+
+  const html=`<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><title>Truth Table &amp; K-map — PHY/EGR 3120</title>
+<style>
+  body{font-family:'Baskerville Old Face',Baskerville,'Libre Baskerville',Georgia,serif;font-size:13pt;color:#1A1008;background:#fff;margin:0;}
+  .page{max-width:7.5in;margin:0 auto;padding:0.65in 0.8in;}
+  h1{font-size:22pt;font-variant:small-caps;letter-spacing:0.05em;border-bottom:3px double #8B7D5E;padding-bottom:8px;margin-bottom:6px;}
+  .meta{font-size:12pt;color:#5C4F38;font-style:italic;margin-bottom:24px;}
+  h2{font-size:17pt;font-variant:small-caps;color:#1B4F8A;letter-spacing:0.04em;border-bottom:1.5px solid #C8BFA0;padding-bottom:5px;margin:28px 0 14px;}
+  @media print{@page{margin:0.65in;size:letter;}body{font-size:12pt;}}
+</style></head><body><div class="page">
+<h1>Truth Table &amp; Karnaugh Map</h1>
+<div class="meta">PHY/EGR 3120: Electronics &mdash; Logic Design &nbsp;&bull;&nbsp; Inputs: ${n}, Outputs: ${state.nOut}, Grouping: ${groupingStr} &nbsp;&bull;&nbsp; Generated: ${now}</div>
+<h2>Truth Table</h2>${ttHtml}
+<h2>Karnaugh Map${state.nOut>1?'s':''}</h2>${kmHtml}
+</div></body></html>`;
+
+  const w=window.open('','_blank','width=860,height=680');
+  w.document.write(html); w.document.close(); w.focus();
+  setTimeout(()=>w.print(),800);
+}
+
+/* BOOT */
+initState();
+</script>
+</body>
+</html>
