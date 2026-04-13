@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive SVG</title>
+
+  <style>
+/* =========================
+   Color Variables
+   ========================= */
+
+:root {
+  --red: #B81C1C;
+  --blue: #1B4F8A;
+  --green: #2A6E2A;
+  --grey: #666;
+  --ink: #1A1008;
+  --brown: #5C4F38;
+  --bg: #D8D0BC;
+}
+
+/* =========================
+   Page
+   ========================= */
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: sans-serif;
+}
+
+/* =========================
+   Default Wire States
+   ========================= */
+
+
+
+.base-wire,
+.collector-wire,
+.ground-wire,
+.outnode-wire,
+.transistor-wire {
+  stroke: var(--brown)
+}
+
+.base-fill,
+.power-fill,
+.output-fill {
+	fill: var(--brown);
+}
+
+#power {
+	fill: var(--blue);
+}
+
+.animationpath{ 
+	stroke: transparent;
+	stroke-width: 1.5;
+	stroke-linecap: round;
+	
+	stroke-dasharray: 0.01 6;
+}
+#collectorcurrent.current-flow {
+	stroke: var(--blue);
+	animation: currentFlow 1s linear infinite;
+} 
+#basecurrent.current-flow {
+	stroke: var(--red);
+	animation: currentFlow 3s linear infinite;
+} 
+
+
+@keyframes currentFlow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: 6;
+  }
+}
+
+/* =========================
+   Active States
+   ========================= */
+
+.input-active-stroke {
+  stroke: var(--red);
+}
+.collector-active-stroke,
+.output-active-stroke {
+  stroke: var(--blue);
+}
+.transistor-active {
+  stroke: var(--green);
+}
+.input-active-fill {
+  fill: var(--red);
+}
+.collector-active-fill,
+.output-active-fill {
+  fill: var(--blue);
+}
+.transistor-fill {
+  fill: var(--green);
+}
+
+
+/* =========================
+   Flow Animation
+   ========================= */
+
+.flow-dot {
+  
+}
+
+.flow-active .flow-dot {
+  
+}
+
+/* =========================
+   Click Targets
+   ========================= */
+
+.clickable {
+  fill: transparent;
+  stroke: transparent;  
+  pointer-events: all;
+  cursor: pointer;
+}
+.clickable:hover {
+  fill: rgba(255,255,255,0.2);
+  cursor: pointer;
+}
+
+/* =========================
+   Labels
+   ========================= */
+
+#errorList {
+  margin-top: 10px;
+  font-size: 10pt;
+}
+
+#errorList li {
+  color: #cc3333;
+}
+
+#errorList .success {
+  color: #2aa84a;
+}
+.instructions * {
+  font-size: 10pt;
+}
+  </style>
+
+</head>
+<body>
+<div class="instructions">
+<p>Below is a transistor switch, which for our purposes will become our first logic gate.</p>
+<p>You can interact with it as follows:</p>
+<ul id="instructions">
+<li> Click the input to toggle it low (brown) or high (red).
+<li> Click the output to toggle it low (brown) or high (blue).
+<li> Click the transistor to toggle it as cutoff (brown) or saturated (green).
+</ul>
+<p> When you think you have a consistent state, hit check circuit.
+</div>
+
+
+<div class="diagram-container">
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="70.644mm" height="61.505mm" version="1.1" viewBox="0 0 70.644 61.505" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <marker id="Triangle" overflow="visible" markerHeight="1" markerWidth="1.5" orient="auto-start-reverse" preserveAspectRatio="none" viewBox="0 0 1 1">
+   <path transform="scale(.5)" d="m5.77 0-8.65 5v-10z" fill="context-stroke" fill-rule="evenodd" stroke="context-stroke" stroke-width="1pt"/>
+  </marker>
+ </defs>
+ <g id="visible" transform="translate(-60.609 -125.92)">
+  <text id="power" x="98.501442" y="128.32469" font-family="'Bookman Old Style'" font-size="3.5278px" stroke-width=".26458" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:none;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="98.501442" y="128.32469" font-family="'Bookman Old Style'" font-size="3.5278px" stroke-width=".26458" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:none;font-variant-numeric:normal">+V<tspan baseline-shift="sub" font-size="65%">CC</tspan></tspan></text>
+  <g id="transistor" fill="none">
+   <title>NPN_Transistor</title>
+   <path d="m94.393 167.66 4.0848-1e-5m1.8e-4 2.3584 4.0848 2.3586m-4.085-7.0492 4.0848-2.3848m-4.0848 0.90097v7.6321m6.8084-3.816a5.4466 5.4466 0 0 1-5.4466 5.4466 5.4466 5.4466 0 0 1-5.4466-5.4466 5.4466 5.4466 0 0 1 5.4466-5.4466 5.4466 5.4466 0 0 1 5.4466 5.4466z" fill="none" stroke="#000" stroke-width=".5"/>
+   <path d="m98.478 170.02 2.0424 1.1793" fill="none" marker-end="url(#Triangle)" stroke="#000" stroke-width=".26458px"/>
+  </g>
+  <g id="collectorpath" fill="none" stroke="#000" stroke-width=".5">
+   <path d="m102.56 148.71v-2.1608l1.9015-0.80752-3.8019-1.615 3.8019-1.6164-3.8019-1.615 3.8019-1.6154-3.8019-1.6164 3.8019-1.615-3.8019-1.6164 3.8019-1.615-1.9015-0.80752v-2.1608"/>
+   <path d="m102.56 148.71v9.5251"/>
+   <path d="m102.56 162.94-2.6e-4 -4.7136"/>
+  </g>
+  <g id="ground" fill="none" stroke="#000">
+   <path transform="translate(3.3208 3.7973)" d="m99.242 183.38-2.6053-4.5124h2.6053 2.6053l-1.3026 2.2562z" stroke-linecap="square" stroke-linejoin="round" stroke-width=".5"/>
+   <path d="m102.56 182.7-2.6e-4 -10.327" stroke-width=".5"/>
+  </g>
+  <g id="basepath" stroke-width=".5">
+   <path d="m90.407 167.66h-2.1608l-0.80752-1.9015-1.615 3.8019-1.6164-3.8019-1.615 3.8019-1.6154-3.8019-1.6164 3.8019-1.615-3.8019-1.6164 3.8019-1.615-3.8019-0.80752 1.9015h-2.1608" fill="none" stroke="#000"/>
+   <path d="m90.08 167.66 4.3131 1e-5" fill="none" stroke="#000"/>
+   <g transform="translate(-1.3458 -7.5032)">
+    <rect x="64.048" y="173.18" width="7.9375" height="3.9688" fill="none" stroke="#000" stroke-linecap="square" stroke-linejoin="round"/>
+    <text x="66.227394" y="176.36577" font-family="'Bookman Old Style'" font-size="3.5278px" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:none;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="66.227394" y="176.36577" font-family="'Bookman Old Style'" font-size="3.5278px" stroke-width=".5" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:none;font-variant-numeric:normal">In</tspan></text>
+   </g>
+  </g>
+  <g id="outputnode">
+   <path d="m102.56 153.47h16.649" fill="none" stroke="#000" stroke-width=".5"/>
+   <circle cx="102.56" cy="153.47" r=".75"/>
+   <g transform="translate(-1.0297 .13807)" stroke-width=".5">
+    <rect x="121.33" y="151.36" width="9.7288" height="4.2218" fill="none" stroke="#000" stroke-linecap="square" stroke-linejoin="round"/>
+    <text x="122.84823" y="154.66994" font-family="'Bookman Old Style'" font-size="3.5278px" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:none;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="122.84823" y="154.66994" font-family="'Bookman Old Style'" font-size="3.5278px" stroke-width=".5" style="font-variant-caps:normal;font-variant-east-asian:normal;font-variant-ligatures:none;font-variant-numeric:normal">Out</tspan></text>
+   </g>
+  </g>
+ </g>
+ <g id="clickable" transform="translate(4.7625 -1.6897)">
+  <rect id="outputclick" class="clickable" x="53.71" y="26.326" width="12.171" height="6.0854" ry="1.4107" stroke-linecap="square" stroke-linejoin="round"/>
+  <rect id="inputclick" class="clickable" x="-4.7625" y="40.217" width="12.171" height="6.0854" ry="1.4107" fill="#fff"/>
+  <circle id="transistorclick" class="clickable" cx="34.396" cy="43.656" r="6.8792" fill="#fff"/>
+ </g>
+ <g id="animation" transform="translate(4.7625 -1.6897)" fill="none" stroke-dasharray="0,6" stroke-linecap="round">
+  <path id="collectorcurrent" class="animationpath" transform="translate(-65.371 -124.23)" d="m102.56 182.66 2.6e-4 -10.286-4.0848-2.3586-1.8e-4 -4.7168 4.0848-2.3586-2.6e-4 -33.1" stroke="#00f"/>
+  <path id="basecurrent" class="animationpath" transform="translate(-65.371 -124.23)" d="m102.56 182.66 2.6e-4 -10.286-4.0526-2.4731-0.0324-2.2438h-26.932" stroke="#f00"/>
+ </g>
+</svg>
+</div>
+
+<button id="checkCircuit">Check Circuit</button>
+
+
+<ul id="errorList"></ul>
+
+
+</body>
+
+<script>
+const state = {
+  transistor: false,
+  output: false,
+  input: false,
+  collectorcurrent: false
+};
+
+
+function checkCircuit() {
+  const errors = [];
+
+  if (state.input !== state.transistor) {
+    errors.push("Base current is not consistent with the transistor state.")
+  }
+  if (state.output == state.transistor) {
+	errors.push("Output voltage is inconsistent with Ohm's law given the collector current and Vcc")
+  }
+  displayErrors(errors);
+}
+function displayErrors(errors) {
+  const list = document.getElementById('errorList');
+  list.innerHTML = '';
+
+  if (errors.length === 0) {
+    list.innerHTML = '<li class="success">✓ No errors</li>';
+    return;
+  }
+
+  errors.forEach(error => {
+    const li = document.createElement('li');
+    li.textContent = error;
+    list.appendChild(li);
+  });
+}
+
+function activateCollector(id) {
+  state.collectorcurrent = !state.collectorcurrent;
+  const collector = document.getElementById(id);
+  collector.querySelectorAll('path, rect, circle, polygon')
+    .forEach(el => el.classList.toggle('collector-active-stroke'));
+  collector.querySelectorAll('text')
+    .forEach(el => el.classList.add('collector-active-fill'));
+	
+  const currentpath = document.getElementById('collectorcurrent');
+  currentpath.classList.toggle('current-flow');
+}
+
+function activateTransistor(id) {
+  const transistor = document.getElementById(id);
+  
+	
+  transistor.querySelectorAll('path')
+    .forEach(el => el.classList.toggle('transistor-active'));
+  
+  activateCollector('collectorpath')
+  
+  state.transistor = !state.transistor;
+} 
+function activateOutput(id) {
+  const group = document.getElementById(id);
+  group.querySelectorAll('path,rect')
+    .forEach(el => el.classList.toggle('output-active-stroke'));
+  group.querySelectorAll('text, circle')
+    .forEach(el => el.classList.toggle('output-active-fill'));
+  
+  state.output = !state.output;
+} 
+function activateInput(id) {
+  const group = document.getElementById(id);
+  group.querySelectorAll('path,rect')
+    .forEach(el => el.classList.toggle('input-active-stroke'));
+  group.querySelectorAll('text,circle')
+    .forEach(el => el.classList.toggle('input-active-fill'));
+  
+  state.input = !state.input;
+  
+  const currentpath = document.getElementById('basecurrent');
+  currentpath.classList.toggle('current-flow');
+  
+} 
+
+document.addEventListener('DOMContentLoaded', () => {
+  const base = document.getElementById('basepath');
+  const collector = document.getElementById('collectorpath');
+  const ground = document.getElementById('ground');
+  const output = document.getElementById('outputnode');
+  const transistor = document.getElementById('transistor');
+  
+  
+  
+  base.querySelectorAll('path, rect, circle, polygon')
+    .forEach(el => el.classList.add('base-wire'));
+  base.querySelectorAll('text')
+    .forEach(el => el.classList.add('base-fill'));
+  
+  collector.querySelectorAll('path, rect, circle, polygon')
+    .forEach(el => el.classList.add('collector-wire'));
+  collector.querySelectorAll('text')
+    .forEach(el => el.classList.add('collector-fill'));
+  
+  ground.querySelectorAll('path, rect, circle, polygon')
+    .forEach(el => el.classList.add('ground-wire'));
+  ground.querySelectorAll('text')
+    .forEach(el => el.classList.add('ground-fill'));
+	
+  output.querySelectorAll('path, rect, polygon')
+    .forEach(el => el.classList.add('ground-wire'));
+  output.querySelectorAll('text, circle')
+    .forEach(el => el.classList.add('output-fill'));
+	
+  transistor.querySelectorAll('path')
+    .forEach(el => el.classList.add('transistor-wire'));
+	
+  document.getElementById('transistorclick')
+    .addEventListener('click', () => activateTransistor('transistor'));
+  document.getElementById('inputclick')
+    .addEventListener('click', () => activateInput('basepath'));
+  document.getElementById('outputclick')
+    .addEventListener('click', () => activateOutput('outputnode'));
+  document.getElementById('checkCircuit')
+  .addEventListener('click', () => checkCircuit());
+	
+});
+</script>
+
+</html>
+
